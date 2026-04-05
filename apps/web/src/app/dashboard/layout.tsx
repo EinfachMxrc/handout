@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import Link from "next/link";
 import { api } from "@convex/_generated/api";
 import { useAuthStore } from "@/store/authStore";
@@ -12,20 +12,28 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
 
   const presenterInfo = useQuery(api.auth.validateToken, token ? { token } : "skip");
+  const logoutMutation = useMutation(api.auth.logout);
 
   useEffect(() => {
     if (!token) {
       router.push("/auth/login");
       return;
     }
-    // If token is invalid (null result), redirect to login
     if (presenterInfo === null) {
       clearAuth();
       router.push("/auth/login");
     }
   }, [token, presenterInfo, router, clearAuth]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // Revoke the token server-side before clearing local state
+    if (token) {
+      try {
+        await logoutMutation({ token });
+      } catch {
+        // Continue with local logout even if server call fails
+      }
+    }
     clearAuth();
     router.push("/auth/login");
   };
@@ -34,7 +42,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Top navigation */}
       <nav className="bg-white border-b border-gray-200 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14">

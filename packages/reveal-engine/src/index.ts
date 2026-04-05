@@ -1,1 +1,1 @@
-export * from "./revealEngine.js";
+export * from "./revealEngine.ts";

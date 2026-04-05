@@ -11,15 +11,14 @@ export default function PublicHandoutPage() {
   const params = useParams();
   const publicToken = params.token as string;
 
-  // Both queries are realtime via Convex subscriptions
   const sessionInfo = useQuery(api.sessions.getPublicSession, { publicToken });
   const visibleBlocks = useQuery(api.sessions.getVisibleBlocksForPublic, { publicToken });
 
-  const [prevBlockIds, setPrevBlockIds] = useState<Set<string>>(new Set());
+  // useRef instead of useState to avoid stale-closure bugs in Strict Mode:
+  // mutations to prevBlockIds are synchronous and don't trigger extra renders.
+  const prevBlockIdsRef = useRef<Set<string>>(new Set());
   const [newBlockIds, setNewBlockIds] = useState<Set<string>>(new Set());
-  const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Track newly revealed blocks for animation
   useEffect(() => {
     if (!visibleBlocks) return;
 
@@ -27,21 +26,20 @@ export default function PublicHandoutPage() {
     const freshIds = new Set<string>();
 
     currentIds.forEach((id) => {
-      if (!prevBlockIds.has(id)) {
-        freshIds.add(id);
-      }
+      if (!prevBlockIdsRef.current.has(id)) freshIds.add(id);
     });
 
-    if (freshIds.size > 0) {
-      setNewBlockIds(freshIds);
-      // Clear animation markers after 2s
-      setTimeout(() => setNewBlockIds(new Set()), 2000);
-    }
+    // Synchronously update the ref – no re-render, no stale closure
+    prevBlockIdsRef.current = currentIds;
 
-    setPrevBlockIds(currentIds);
+    if (freshIds.size === 0) return;
+
+    setNewBlockIds(freshIds);
+    // Store timer id and clear on cleanup to avoid state updates after unmount
+    const timer = setTimeout(() => setNewBlockIds(new Set()), 2000);
+    return () => clearTimeout(timer);
   }, [visibleBlocks]);
 
-  // Handle print
   const handlePrint = () => window.print();
 
   if (sessionInfo === undefined || visibleBlocks === undefined) {
@@ -62,7 +60,7 @@ export default function PublicHandoutPage() {
           <span className="text-4xl mb-4 block">🔍</span>
           <h1 className="text-xl font-bold text-gray-900 mb-2">Handout nicht gefunden</h1>
           <p className="text-gray-600">
-            Dieser Link ist ungültig oder die Session wurde beendet.
+            Dieser Link ist ungültig oder die Session ist nicht mehr verfügbar.
           </p>
         </div>
       </div>
@@ -77,9 +75,14 @@ export default function PublicHandoutPage() {
 
   const status = statusInfo[sessionInfo.status as keyof typeof statusInfo] ?? statusInfo.ended;
 
+  const footerText = {
+    live: "Live aktualisiert",
+    draft: "Entwurf – noch nicht gestartet",
+    ended: "Beendet",
+  }[sessionInfo.status] ?? "Slide Handout";
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Print styles */}
       <style>{`
         @media print {
           .no-print { display: none !important; }
@@ -88,14 +91,11 @@ export default function PublicHandoutPage() {
         }
       `}</style>
 
-      {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10 no-print">
         <div className="max-w-2xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-lg font-bold text-gray-900">
-                {sessionInfo.handoutTitle}
-              </h1>
+              <h1 className="text-lg font-bold text-gray-900">{sessionInfo.handoutTitle}</h1>
               {sessionInfo.handoutDescription && (
                 <p className="text-sm text-gray-500">{sessionInfo.handoutDescription}</p>
               )}
@@ -125,7 +125,6 @@ export default function PublicHandoutPage() {
         </div>
       </header>
 
-      {/* Content */}
       <main className="max-w-2xl mx-auto px-4 py-8">
         {visibleBlocks.length === 0 ? (
           <div className="text-center py-16">
@@ -141,7 +140,7 @@ export default function PublicHandoutPage() {
           </div>
         ) : (
           <div className="space-y-6">
-            {visibleBlocks.map((block, idx) => {
+            {visibleBlocks.map((block) => {
               const isNew = newBlockIds.has(block.id);
               return (
                 <div
@@ -150,26 +149,20 @@ export default function PublicHandoutPage() {
                     isNew ? "animate-slide-down ring-2 ring-blue-200" : ""
                   }`}
                 >
-                  <h2 className="text-lg font-semibold text-gray-900 mb-3">
-                    {block.title}
-                  </h2>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-3">{block.title}</h2>
                   <div className="markdown-content text-gray-700">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {block.content}
-                    </ReactMarkdown>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{block.content}</ReactMarkdown>
                   </div>
                 </div>
               );
             })}
           </div>
         )}
-
-        <div ref={bottomRef} className="h-16" />
+        <div className="h-16" />
       </main>
 
-      {/* Footer */}
       <footer className="text-center py-4 text-xs text-gray-400 no-print">
-        Slide Handout · Live aktualisiert
+        Slide Handout · {footerText}
       </footer>
     </div>
   );

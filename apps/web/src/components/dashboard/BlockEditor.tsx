@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { useAuthStore } from "@/store/authStore";
@@ -45,15 +45,25 @@ export function BlockEditor({ handoutId, block, onSave, onCancel }: BlockEditorP
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!token) return;
+
+    // N3: Give user feedback instead of silently returning
+    if (!token) {
+      setError("Nicht authentifiziert. Bitte erneut anmelden.");
+      return;
+    }
 
     setError("");
     setIsSaving(true);
 
     try {
+      // N4: parseInt with explicit radix 10 and NaN guard
+      const revealToSlideNum = revealToSlide
+        ? parseInt(revealToSlide, 10)
+        : undefined;
+
       const revealRule = {
         revealSlide,
-        revealToSlide: revealToSlide ? parseInt(revealToSlide) : undefined,
+        revealToSlide: Number.isInteger(revealToSlideNum) ? revealToSlideNum : undefined,
         relockOnBack: relockOnBack || undefined,
         alwaysVisible: alwaysVisible || undefined,
         manuallyTriggered: manuallyTriggered || undefined,
@@ -86,9 +96,11 @@ export function BlockEditor({ handoutId, block, onSave, onCancel }: BlockEditorP
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* N5: htmlFor + matching id on all labels/inputs */}
       <div>
-        <label className="label">Titel</label>
+        <label className="label" htmlFor="block-title">Titel</label>
         <input
+          id="block-title"
           className="input"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -98,8 +110,9 @@ export function BlockEditor({ handoutId, block, onSave, onCancel }: BlockEditorP
       </div>
 
       <div>
-        <label className="label">Inhalt (Markdown)</label>
+        <label className="label" htmlFor="block-content">Inhalt (Markdown)</label>
         <textarea
+          id="block-content"
           className="textarea"
           value={content}
           onChange={(e) => setContent(e.target.value)}
@@ -149,18 +162,20 @@ export function BlockEditor({ handoutId, block, onSave, onCancel }: BlockEditorP
             <>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="label">Ab Folie</label>
+                  <label className="label" htmlFor="reveal-slide">Ab Folie</label>
                   <input
+                    id="reveal-slide"
                     type="number"
                     className="input"
                     value={revealSlide}
-                    onChange={(e) => setRevealSlide(parseInt(e.target.value) || 1)}
+                    onChange={(e) => setRevealSlide(parseInt(e.target.value, 10) || 1)}
                     min={1}
                   />
                 </div>
                 <div>
-                  <label className="label">Bis Folie (optional)</label>
+                  <label className="label" htmlFor="reveal-to-slide">Bis Folie (optional)</label>
                   <input
+                    id="reveal-to-slide"
                     type="number"
                     className="input"
                     value={revealToSlide}
