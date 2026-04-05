@@ -14,7 +14,7 @@ export default defineSchema({
   // ---- Presenters (simple password-based auth for MVP) ----
   presenters: defineTable({
     email: v.string(),
-    /** bcrypt hash */
+    /** MVP: simple 32-bit hash via simpleHash() in _utils.ts – replace with bcrypt for production */
     passwordHash: v.string(),
     name: v.optional(v.string()),
     createdAt: v.number(),

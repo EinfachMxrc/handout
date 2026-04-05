@@ -63,7 +63,7 @@ export function App({ convexReady }: AppProps) {
       setOfficeMode("manual_only");
       store.setSyncStatus("manual_only");
     }
-  }, [store.sessionId, store.presenterToken]);
+  }, [convexReady, store.sessionId, store.presenterToken]);
 
   const syncSlide = async (slideNumber: number, totalSlides?: number, title?: string) => {
     if (!convexReady || !setCurrentSlide || !store.sessionId || !store.presenterToken) return;

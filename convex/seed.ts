@@ -1,24 +1,14 @@
 /**
  * Seed / Demo-Daten für lokale Entwicklung.
  * Ausführen mit: npx convex run seed:seedDemo
+ *
+ * Exported as internalMutation – callable via CLI but NOT from client-side code.
  */
 
-import { mutation } from "./_generated/server";
-import { v } from "convex/values";
-import { generateToken } from "./_utils";
+import { internalMutation } from "./_generated/server";
+import { generateToken, simpleHash } from "./_utils";
 
-function simpleHash(password: string): string {
-  let hash = 0;
-  const salted = `slide-handout-mvp:${password}`;
-  for (let i = 0; i < salted.length; i++) {
-    const char = salted.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash = hash & hash;
-  }
-  return `mvp_${Math.abs(hash).toString(16)}`;
-}
-
-export const seedDemo = mutation({
+export const seedDemo = internalMutation({
   args: {},
   handler: async (ctx) => {
     // Create demo presenter
@@ -84,7 +74,7 @@ export const seedDemo = mutation({
       },
       {
         title: "Weiterführende Ressourcen",
-        content: "## Weiterführende Ressourcen\n\n**Bücher:**\n- \"Artificial Intelligence: A Modern Approach\" – Russell & Norvig\n- \"Deep Learning\" – Goodfellow et al.\n\n**Online-Kurse:**\n- fast.ai (kostenlos)\n- Coursera Machine Learning Specialization\n\n**Kontakt:** slides-handout@example.com",
+        content: "## Weiterführende Ressourcen\n\n**Bücher:**\n- \"Artificial Intelligence: A Modern Approach\" – Russell & Norvig\n- \"Deep Learning\" – Goodfellow et al.\n\n**Online-Kurse:**\n- fast.ai (kostenlos)\n- Coursera Machine Learning Specialization",
         order: 5,
         revealRule: { revealSlide: 9 },
       },
@@ -99,8 +89,8 @@ export const seedDemo = mutation({
       });
     }
 
-    // Create a demo session
-    const publicToken = "demo1234";
+    // Generate a unique public token (not hardcoded)
+    const publicToken = generateToken(8);
     const sessionId = await ctx.db.insert("presentationSessions", {
       handoutId,
       presenterId,

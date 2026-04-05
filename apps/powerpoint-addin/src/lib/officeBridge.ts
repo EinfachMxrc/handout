@@ -8,12 +8,13 @@
  *
  * Office.js slide detection reality check:
  * ─────────────────────────────────────────
- * In EDIT mode (Normal view): SlideSelectionChanged event works reliably.
+ * In EDIT mode (Normal view): DocumentSelectionChanged event is available.
+ *   NOTE: this event fires on ANY selection change (click on text box, shape,
+ *   etc.), not just slide navigation. We debounce and compare slide numbers
+ *   before issuing a Convex mutation to avoid excessive writes.
  * In SLIDESHOW mode: Office.js has limited access. The add-in taskpane
  *   is often suspended during fullscreen slideshow. No reliable event.
  * → Auto-sync works in Normal/Edit view. Manual/Hybrid fallback in slideshow.
- *
- * This bridge detects which mode is available and reports it honestly.
  */
 
 export type OfficeMode = "office" | "browser";
@@ -33,7 +34,13 @@ export interface OfficeBridgeCallbacks {
 
 let isOfficeInitialized = false;
 let _callbacks: OfficeBridgeCallbacks | null = null;
-let _cleanupFn: (() => void) | null = null;
+
+/** Last known slide number – used to suppress no-op events */
+let _lastReportedSlide: number | null = null;
+
+/** Debounce timer for DocumentSelectionChanged */
+let _debounceTimer: ReturnType<typeof setTimeout> | null = null;
+const DEBOUNCE_MS = 250;
 
 /**
  * Returns true if Office.js is available in this environment.
@@ -51,7 +58,6 @@ export function initOfficeBridge(callbacks: OfficeBridgeCallbacks): Promise<Sync
 
   return new Promise((resolve) => {
     if (!isOfficeAvailable()) {
-      // Running in plain browser – no Office.js
       resolve("manual_only");
       return;
     }
@@ -65,7 +71,6 @@ export function initOfficeBridge(callbacks: OfficeBridgeCallbacks): Promise<Sync
 
       isOfficeInitialized = true;
 
-      // Register slide selection change event (works in Normal view)
       try {
         Office.context.document.addHandlerAsync(
           Office.EventType.DocumentSelectionChanged,
@@ -79,7 +84,7 @@ export function initOfficeBridge(callbacks: OfficeBridgeCallbacks): Promise<Sync
             }
           }
         );
-      } catch (e) {
+      } catch {
         callbacks.onError("Slide-Erkennung nicht verfügbar. Manueller Modus aktiv.");
         resolve("hybrid");
       }
@@ -87,19 +92,33 @@ export function initOfficeBridge(callbacks: OfficeBridgeCallbacks): Promise<Sync
   });
 }
 
+/**
+ * Debounced handler for DocumentSelectionChanged.
+ * DocumentSelectionChanged fires on every click/selection, not just slide
+ * navigation. We debounce and only call onSlideChange when the slide number
+ * actually changed to avoid spamming Convex mutations.
+ */
 function handleSelectionChanged() {
-  if (!_callbacks) return;
-  getCurrentSlideInfo()
-    .then((info) => {
-      if (info) _callbacks!.onSlideChange(info);
-    })
-    .catch((e) => {
-      _callbacks?.onError(`Folien-Update fehlgeschlagen: ${e}`);
-    });
+  if (_debounceTimer) clearTimeout(_debounceTimer);
+  _debounceTimer = setTimeout(() => {
+    getCurrentSlideInfo()
+      .then((info) => {
+        if (!info || !_callbacks) return;
+        // Only fire if slide actually changed
+        if (info.slideNumber !== _lastReportedSlide) {
+          _lastReportedSlide = info.slideNumber;
+          _callbacks.onSlideChange(info);
+        }
+      })
+      .catch((e) => {
+        _callbacks?.onError(`Folien-Update fehlgeschlagen: ${e}`);
+      });
+  }, DEBOUNCE_MS);
 }
 
 /**
  * Get current slide info from Office.js.
+ * Uses getSlideCountAsync() for total slides (public API, not private property).
  * Returns null if not available.
  */
 export function getCurrentSlideInfo(): Promise<OfficeSlideInfo | null> {
@@ -110,48 +129,44 @@ export function getCurrentSlideInfo(): Promise<OfficeSlideInfo | null> {
     }
 
     try {
-      // Get presentation title
       const title = Office.context.document.url ?? "Präsentation";
       const shortTitle = title.split(/[/\\]/).pop()?.replace(/\.pptx?$/i, "") ?? "Präsentation";
 
-      // Get current slide index using ActiveView
-      Office.context.document.getActiveViewAsync((viewResult) => {
-        if (viewResult.status === Office.AsyncResultStatus.Failed) {
-          resolve(null);
-          return;
-        }
+      // Get current slide via SlideRange selection
+      Office.context.document.getSelectedDataAsync(
+        Office.CoercionType.SlideRange,
+        (slideResult) => {
+          if (slideResult.status === Office.AsyncResultStatus.Failed) {
+            resolve(null);
+            return;
+          }
 
-        // Get slide selection
-        Office.context.document.getSelectedDataAsync(
-          Office.CoercionType.SlideRange,
-          (slideResult) => {
-            if (slideResult.status === Office.AsyncResultStatus.Failed) {
-              // Can't get slide info in this view mode
+          try {
+            const slideData = slideResult.value as any;
+            const slides = slideData?.slides;
+            if (!slides || slides.length === 0) {
               resolve(null);
               return;
             }
 
-            try {
-              const slideData = slideResult.value as any;
-              const slides = slideData?.slides;
-              if (slides && slides.length > 0) {
-                const currentSlide = slides[0].index + 1; // 0-based to 1-based
-                const total = (Office.context.document as any)._slideCount ?? undefined;
+            const currentSlide = slides[0].index + 1; // 0-based → 1-based
 
-                resolve({
-                  slideNumber: currentSlide,
-                  totalSlides: total ?? currentSlide,
-                  presentationTitle: shortTitle,
-                });
-              } else {
-                resolve(null);
+            // Use the public getSlideCountAsync API instead of the private _slideCount property
+            (Office.context.document as any).getSlideCountAsync(
+              (countResult: Office.AsyncResult<number>) => {
+                const totalSlides =
+                  countResult.status === Office.AsyncResultStatus.Succeeded
+                    ? countResult.value
+                    : currentSlide; // fallback: at least as many as current
+
+                resolve({ slideNumber: currentSlide, totalSlides, presentationTitle: shortTitle });
               }
-            } catch {
-              resolve(null);
-            }
+            );
+          } catch {
+            resolve(null);
           }
-        );
-      });
+        }
+      );
     } catch {
       resolve(null);
     }
@@ -162,6 +177,10 @@ export function getCurrentSlideInfo(): Promise<OfficeSlideInfo | null> {
  * Clean up event handlers.
  */
 export function destroyOfficeBridge() {
+  if (_debounceTimer) {
+    clearTimeout(_debounceTimer);
+    _debounceTimer = null;
+  }
   if (!isOfficeInitialized || !isOfficeAvailable()) return;
   try {
     Office.context.document.removeHandlerAsync(
@@ -172,5 +191,5 @@ export function destroyOfficeBridge() {
     // ignore
   }
   _callbacks = null;
-  _cleanupFn = null;
+  _lastReportedSlide = null;
 }

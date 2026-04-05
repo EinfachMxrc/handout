@@ -23,8 +23,8 @@ export default function HomePage() {
           </Link>
         </div>
         <p className="mt-8 text-sm text-gray-500">
-          Demo: Erstellen Sie ein Konto oder melden Sie sich mit{" "}
-          <code className="bg-gray-200 px-1 rounded">demo@example.com / demo1234</code> an.
+          Demo: Erstellen Sie ein Konto oder verwenden Sie den Demo-Account{" "}
+          <code className="bg-gray-200 px-1 rounded">demo@example.com</code>.
         </p>
       </div>
     </div>

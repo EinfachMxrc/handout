@@ -4,25 +4,11 @@
  * Uses a basic hash approach - in production use a proper auth provider.
  */
 
-import { mutation, query, internalMutation } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { generateToken } from "./_utils";
+import { generateToken, simpleHash } from "./_utils";
 
 const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
-
-/** Simple hash function for MVP (NOT for production use) */
-function simpleHash(password: string): string {
-  // In production, use bcrypt via an action. For MVP, we use a simple approach.
-  // We XOR-hash with a fixed salt for basic obscurity.
-  let hash = 0;
-  const salted = `slide-handout-mvp:${password}`;
-  for (let i = 0; i < salted.length; i++) {
-    const char = salted.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash = hash & hash;
-  }
-  return `mvp_${Math.abs(hash).toString(16)}`;
-}
 
 /** Register a new presenter account */
 export const register = mutation({

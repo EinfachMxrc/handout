@@ -207,7 +207,7 @@ export default function SessionPage() {
         </div>
 
         {/* Right column: live preview */}
-        {(activeView === "preview" || true) && (
+        {activeView === "preview" && (
           <div className="card">
             <h2 className="font-semibold text-gray-900 mb-4">
               Live-Vorschau
