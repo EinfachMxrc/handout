@@ -1,0 +1,12 @@
+node_modules/
+.next/
+dist/
+.env.local
+.env
+*.env
+.convex/
+convex/_generated/api.js
+.DS_Store
+Thumbs.db
+*.log
+.pnpm-store/

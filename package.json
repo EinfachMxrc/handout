@@ -1,0 +1,20 @@
+{
+  "name": "slide-handout-root",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"pnpm --filter web dev\" \"pnpm --filter powerpoint-addin dev\" \"pnpm --filter convex-backend dev\"",
+    "dev:web": "pnpm --filter web dev",
+    "dev:addin": "pnpm --filter powerpoint-addin dev",
+    "dev:convex": "pnpm --filter convex-backend dev",
+    "build": "pnpm --filter reveal-engine build && pnpm --filter shared build && pnpm --filter web build && pnpm --filter powerpoint-addin build",
+    "test": "pnpm --filter reveal-engine test",
+    "test:all": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "type-check": "pnpm -r type-check"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "typescript": "^5.7.3"
+  }
+}
