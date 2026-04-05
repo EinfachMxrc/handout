@@ -4,14 +4,14 @@ import { useQuery, useMutation } from "convex/react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
-import { api } from "../../../../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
 import { useAuthStore } from "@/store/authStore";
 import { SlideControls } from "@/components/dashboard/SlideControls";
 import { QRCodeDialog } from "@/components/dashboard/QRCodeDialog";
 import { Badge } from "@/components/ui/Badge";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import type { Id } from "../../../../../convex/_generated/dataModel";
+import type { Id } from "@convex/_generated/dataModel";
 
 export default function SessionPage() {
   const params = useParams();

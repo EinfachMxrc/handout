@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { useMutation } from "convex/react";
-import { api } from "../../../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
 import { useAuthStore } from "@/store/authStore";
-import type { Id } from "../../../../convex/_generated/dataModel";
+import type { Id } from "@convex/_generated/dataModel";
 
 interface SlideControlsProps {
   sessionId: string;

@@ -11,7 +11,7 @@ import { SlideSimulator } from "./lib/simulator";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { SimulatorPanel } from "./components/SimulatorPanel";
 import { ConnectionStatus } from "./components/ConnectionStatus";
-import { api } from "../../convex/_generated/api";
+import { api } from "../../../convex/_generated/api";
 
 interface AppProps {
   convexReady: boolean;

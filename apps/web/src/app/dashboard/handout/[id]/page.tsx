@@ -4,12 +4,12 @@ import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import { api } from "../../../../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
 import { useAuthStore } from "@/store/authStore";
 import { BlockEditor } from "@/components/dashboard/BlockEditor";
 import { Modal } from "@/components/ui/Modal";
 import { Badge } from "@/components/ui/Badge";
-import type { Id } from "../../../../../convex/_generated/dataModel";
+import type { Id } from "@convex/_generated/dataModel";
 
 export default function HandoutEditPage() {
   const params = useParams();
