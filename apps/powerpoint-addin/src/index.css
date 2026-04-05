@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Office Add-in body – compact UI */
+body {
+  @apply bg-white text-gray-900 text-sm antialiased;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium rounded transition-colors;
+}
+
+.btn-primary {
+  @apply btn bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50;
+}
+
+.btn-secondary {
+  @apply btn bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50;
+}
+
+.btn-danger {
+  @apply btn bg-red-600 text-white hover:bg-red-700 disabled:opacity-50;
+}
+
+.input-sm {
+  @apply w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500;
+}
