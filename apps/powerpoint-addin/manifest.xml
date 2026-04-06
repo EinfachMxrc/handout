@@ -6,7 +6,7 @@
   xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
   xsi:type="TaskPaneApp">
 
-  <Id>12345678-1234-1234-1234-123456789abc</Id>
+  <Id>8c8221f3-4d73-4f50-8cc8-12a4fd2f7df4</Id>
   <Version>1.0.0.0</Version>
   <ProviderName>Slide Handout MVP</ProviderName>
   <DefaultLocale>de-DE</DefaultLocale>
@@ -14,13 +14,13 @@
   <DisplayName DefaultValue="Slide Handout"/>
   <Description DefaultValue="Live-Handout für Präsentationen – Inhalte schalten sich folienweise frei."/>
 
-  <IconUrl DefaultValue="https://localhost:3001/icon-32.png"/>
-  <HighResolutionIconUrl DefaultValue="https://localhost:3001/icon-64.png"/>
+  <IconUrl DefaultValue="https://handout.example.com/icon-32.png"/>
+  <HighResolutionIconUrl DefaultValue="https://handout.example.com/icon-64.png"/>
 
-  <SupportUrl DefaultValue="https://localhost:3001"/>
+  <SupportUrl DefaultValue="https://handout.example.com"/>
 
   <AppDomains>
-    <AppDomain>localhost</AppDomain>
+    <AppDomain>https://handout.example.com</AppDomain>
   </AppDomains>
 
   <Hosts>
@@ -28,7 +28,7 @@
   </Hosts>
 
   <DefaultSettings>
-    <SourceLocation DefaultValue="https://localhost:3001/"/>
+    <SourceLocation DefaultValue="https://handout.example.com/"/>
   </DefaultSettings>
 
   <Permissions>ReadWriteDocument</Permissions>
@@ -76,13 +76,13 @@
     </Hosts>
     <Resources>
       <bt:Images>
-        <bt:Image id="Icon.16x16" DefaultValue="https://localhost:3001/icon-16.png"/>
-        <bt:Image id="Icon.32x32" DefaultValue="https://localhost:3001/icon-32.png"/>
-        <bt:Image id="Icon.80x80" DefaultValue="https://localhost:3001/icon-80.png"/>
+        <bt:Image id="Icon.16x16" DefaultValue="https://handout.example.com/icon-16.png"/>
+        <bt:Image id="Icon.32x32" DefaultValue="https://handout.example.com/icon-32.png"/>
+        <bt:Image id="Icon.80x80" DefaultValue="https://handout.example.com/icon-80.png"/>
       </bt:Images>
       <bt:Urls>
-        <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://localhost:3001"/>
-        <bt:Url id="Taskpane.Url" DefaultValue="https://localhost:3001/"/>
+        <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://handout.example.com"/>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://handout.example.com/"/>
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GetStarted.Title" DefaultValue="Slide Handout – Bereit!"/>
