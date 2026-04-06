@@ -3,6 +3,7 @@
  */
 
 import { mutation, query } from "./_generated/server";
+import type { QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
 
 const revealRuleArg = v.object({
@@ -14,10 +15,10 @@ const revealRuleArg = v.object({
 });
 
 // ---- AUTH HELPER ----
-async function requirePresenter(ctx: any, token: string) {
+async function requirePresenter(ctx: Pick<QueryCtx, "db">, token: string) {
   const session = await ctx.db
     .query("presenterSessions")
-    .withIndex("by_token", (q: any) => q.eq("token", token))
+    .withIndex("by_token", (q) => q.eq("token", token))
     .first();
 
   if (!session || session.expiresAt < Date.now()) {
@@ -38,7 +39,7 @@ export const listHandouts = query({
     const presenter = await requirePresenter(ctx, args.token);
     return ctx.db
       .query("handouts")
-      .withIndex("by_presenter", (q: any) => q.eq("presenterId", presenter._id))
+      .withIndex("by_presenter", (q) => q.eq("presenterId", presenter._id))
       .order("desc")
       .collect();
   },
@@ -67,7 +68,7 @@ export const getHandoutWithBlocks = query({
 
     const blocks = await ctx.db
       .query("handoutBlocks")
-      .withIndex("by_handout", (q: any) => q.eq("handoutId", args.handoutId))
+      .withIndex("by_handout", (q) => q.eq("handoutId", args.handoutId))
       .collect();
 
     return {
@@ -132,7 +133,7 @@ export const deleteHandout = mutation({
     // Delete all blocks
     const blocks = await ctx.db
       .query("handoutBlocks")
-      .withIndex("by_handout", (q: any) => q.eq("handoutId", args.handoutId))
+      .withIndex("by_handout", (q) => q.eq("handoutId", args.handoutId))
       .collect();
     for (const block of blocks) {
       await ctx.db.delete(block._id);
@@ -162,7 +163,7 @@ export const createBlock = mutation({
     // Determine next order
     const existingBlocks = await ctx.db
       .query("handoutBlocks")
-      .withIndex("by_handout", (q: any) => q.eq("handoutId", args.handoutId))
+      .withIndex("by_handout", (q) => q.eq("handoutId", args.handoutId))
       .collect();
     const maxOrder = existingBlocks.reduce((max, b) => Math.max(max, b.order), -1);
 

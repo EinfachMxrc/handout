@@ -4,14 +4,15 @@
  */
 
 import { mutation, query } from "./_generated/server";
+import type { QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { generateToken, isBlockVisible } from "./_utils";
 
 // ---- AUTH HELPER ----
-async function requirePresenter(ctx: any, token: string) {
+async function requirePresenter(ctx: Pick<QueryCtx, "db">, token: string) {
   const session = await ctx.db
     .query("presenterSessions")
-    .withIndex("by_token", (q: any) => q.eq("token", token))
+    .withIndex("by_token", (q) => q.eq("token", token))
     .first();
 
   if (!session || session.expiresAt < Date.now()) {
@@ -34,7 +35,7 @@ export const listSessions = query({
     const presenter = await requirePresenter(ctx, args.token);
     return ctx.db
       .query("presentationSessions")
-      .withIndex("by_presenter", (q: any) => q.eq("presenterId", presenter._id))
+      .withIndex("by_presenter", (q) => q.eq("presenterId", presenter._id))
       .order("desc")
       .collect();
   },
@@ -52,7 +53,7 @@ export const getPresenterSessionState = query({
     const handout = await ctx.db.get(session.handoutId);
     const blocks = await ctx.db
       .query("handoutBlocks")
-      .withIndex("by_handout", (q: any) => q.eq("handoutId", session.handoutId))
+      .withIndex("by_handout", (q) => q.eq("handoutId", session.handoutId))
       .collect();
 
     const blocksWithVisibility = blocks
@@ -83,7 +84,7 @@ export const getPublicSession = query({
   handler: async (ctx, args) => {
     const session = await ctx.db
       .query("presentationSessions")
-      .withIndex("by_public_token", (q: any) => q.eq("publicToken", args.publicToken))
+      .withIndex("by_public_token", (q) => q.eq("publicToken", args.publicToken))
       .first();
 
     if (!session) return null;
@@ -115,14 +116,14 @@ export const getVisibleBlocksForPublic = query({
   handler: async (ctx, args) => {
     const session = await ctx.db
       .query("presentationSessions")
-      .withIndex("by_public_token", (q: any) => q.eq("publicToken", args.publicToken))
+      .withIndex("by_public_token", (q) => q.eq("publicToken", args.publicToken))
       .first();
 
     if (!session) return [];
 
     const blocks = await ctx.db
       .query("handoutBlocks")
-      .withIndex("by_handout", (q: any) => q.eq("handoutId", session.handoutId))
+      .withIndex("by_handout", (q) => q.eq("handoutId", session.handoutId))
       .collect();
 
     // Server-side filter: only visible blocks
