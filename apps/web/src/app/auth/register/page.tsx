@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "@convex/_generated/api";
 import { useAuthStore } from "@/store/authStore";
+import { isConvexConfigured, CONVEX_MUTATION_TIMEOUT_MS } from "@/lib/convex";
 
 export default function RegisterPage() {
   const [name, setName] = useState("");
@@ -26,9 +27,17 @@ export default function RegisterPage() {
       return;
     }
 
+    if (!isConvexConfigured) {
+      setError("Backend nicht konfiguriert. Bitte NEXT_PUBLIC_CONVEX_URL setzen.");
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const result = await register({ email, password, name });
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Zeitüberschreitung – bitte erneut versuchen")), CONVEX_MUTATION_TIMEOUT_MS)
+      );
+      const result = await Promise.race([register({ email, password, name }), timeout]);
       setAuth(result.token as string, name, email);
       router.push("/dashboard");
     } catch (err: any) {
