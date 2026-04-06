@@ -20,7 +20,7 @@
   <SupportUrl DefaultValue="https://handout.example.com"/>
 
   <AppDomains>
-    <AppDomain>https://handout.example.com</AppDomain>
+    <AppDomain>handout.example.com</AppDomain>
   </AppDomains>
 
   <Hosts>
