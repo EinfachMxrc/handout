@@ -1,15 +1,129 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
+import { DndProvider, useDrag, useDrop } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
 import { api } from "@convex/_generated/api";
 import { useAuthStore } from "@/store/authStore";
 import { BlockEditor } from "@/components/dashboard/BlockEditor";
 import { Modal } from "@/components/ui/Modal";
 import { Badge } from "@/components/ui/Badge";
 import type { Id } from "@convex/_generated/dataModel";
+
+const DRAG_TYPE = "HANDOUT_BLOCK";
+
+interface DraggableBlockProps {
+  block: {
+    _id: string;
+    title: string;
+    content: string;
+    order: number;
+    revealRule: {
+      revealSlide: number;
+      revealToSlide?: number;
+      relockOnBack?: boolean;
+      alwaysVisible?: boolean;
+      manuallyTriggered?: boolean;
+    };
+  };
+  index: number;
+  totalBlocks: number;
+  revealRuleLabel: (rule: any) => string;
+  onMoveBlock: (id: string, dir: "up" | "down") => void;
+  onDrop: (dragIndex: number, hoverIndex: number) => void;
+  onEdit: (id: string) => void;
+  onDelete: (id: string) => void;
+}
+
+function DraggableBlock({
+  block,
+  index,
+  totalBlocks,
+  revealRuleLabel,
+  onMoveBlock,
+  onDrop,
+  onEdit,
+  onDelete,
+}: DraggableBlockProps) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  const [{ isDragging }, drag, dragPreview] = useDrag({
+    type: DRAG_TYPE,
+    item: { index },
+    collect: (monitor) => ({ isDragging: monitor.isDragging() }),
+  });
+
+  const [{ isOver }, drop] = useDrop<{ index: number }, void, { isOver: boolean }>({
+    accept: DRAG_TYPE,
+    collect: (monitor) => ({ isOver: monitor.isOver() }),
+    hover(item) {
+      if (item.index === index) return;
+      onDrop(item.index, index);
+      item.index = index;
+    },
+  });
+
+  drop(dragPreview(ref));
+
+  return (
+    <div
+      ref={ref}
+      className={`card transition-all ${isDragging ? "opacity-40" : ""} ${isOver ? "ring-2 ring-blue-300" : ""}`}
+    >
+      <div className="flex items-start gap-3">
+        {/* Drag handle */}
+        <div
+          ref={drag as any}
+          className="flex flex-col gap-0.5 flex-shrink-0 mt-2 cursor-grab active:cursor-grabbing touch-none"
+          title="Ziehen zum Sortieren"
+        >
+          <span className="text-gray-300 leading-none select-none">⠿</span>
+        </div>
+
+        {/* Arrow controls */}
+        <div className="flex flex-col gap-1 flex-shrink-0 mt-1">
+          <button
+            className="w-6 h-6 text-gray-400 hover:text-gray-600 flex items-center justify-center disabled:opacity-30"
+            onClick={() => onMoveBlock(block._id, "up")}
+            disabled={index === 0}
+            title="Nach oben"
+          >
+            ↑
+          </button>
+          <button
+            className="w-6 h-6 text-gray-400 hover:text-gray-600 flex items-center justify-center disabled:opacity-30"
+            onClick={() => onMoveBlock(block._id, "down")}
+            disabled={index === totalBlocks - 1}
+            title="Nach unten"
+          >
+            ↓
+          </button>
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs text-gray-400">#{index + 1}</span>
+            <h3 className="font-semibold text-gray-900 truncate">{block.title}</h3>
+            <Badge variant="blue">{revealRuleLabel(block.revealRule)}</Badge>
+          </div>
+          <p className="text-sm text-gray-600 line-clamp-2">{block.content}</p>
+        </div>
+
+        <div className="flex gap-2 flex-shrink-0">
+          <button className="btn-secondary text-xs" onClick={() => onEdit(block._id)}>
+            Bearbeiten
+          </button>
+          <button className="btn-danger text-xs" onClick={() => onDelete(block._id)}>
+            ×
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function HandoutEditPage() {
   const params = useParams();
@@ -59,14 +173,28 @@ export default function HandoutEditPage() {
 
   const handleMoveBlock = async (blockId: string, direction: "up" | "down") => {
     if (!data || !token) return;
-    const blocks = [...data.blocks].sort((a, b) => a.order - b.order);
-    const idx = blocks.findIndex((b) => b._id === blockId);
+    const sorted = [...data.blocks].sort((a, b) => a.order - b.order);
+    const idx = sorted.findIndex((b) => b._id === blockId);
     if (direction === "up" && idx === 0) return;
-    if (direction === "down" && idx === blocks.length - 1) return;
+    if (direction === "down" && idx === sorted.length - 1) return;
 
-    const newBlocks = [...blocks];
+    const newBlocks = [...sorted];
     const swapIdx = direction === "up" ? idx - 1 : idx + 1;
     [newBlocks[idx], newBlocks[swapIdx]] = [newBlocks[swapIdx], newBlocks[idx]];
+
+    await reorderBlocks({
+      token,
+      handoutId: handoutId as Id<"handouts">,
+      blockIds: newBlocks.map((b) => b._id as Id<"handoutBlocks">),
+    });
+  };
+
+  const handleDrop = async (dragIndex: number, hoverIndex: number) => {
+    if (!data || !token) return;
+    const sorted = [...data.blocks].sort((a, b) => a.order - b.order);
+    const newBlocks = [...sorted];
+    const [moved] = newBlocks.splice(dragIndex, 1);
+    newBlocks.splice(hoverIndex, 0, moved);
 
     await reorderBlocks({
       token,
@@ -121,67 +249,33 @@ export default function HandoutEditPage() {
       </div>
 
       {/* Blocks list */}
-      <div className="space-y-3 mb-6">
-        {blocks.length === 0 && (
-          <div className="card text-center py-8 text-gray-500">
-            <p>Noch keine Blöcke. Fügen Sie den ersten Inhalt hinzu.</p>
-          </div>
-        )}
-
-        {blocks.map((block, idx) => (
-          <div key={block._id} className="card">
-            <div className="flex items-start gap-3">
-              {/* Order controls */}
-              <div className="flex flex-col gap-1 flex-shrink-0 mt-1">
-                <button
-                  className="w-6 h-6 text-gray-400 hover:text-gray-600 flex items-center justify-center disabled:opacity-30"
-                  onClick={() => handleMoveBlock(block._id, "up")}
-                  disabled={idx === 0}
-                  title="Nach oben"
-                >
-                  ↑
-                </button>
-                <button
-                  className="w-6 h-6 text-gray-400 hover:text-gray-600 flex items-center justify-center disabled:opacity-30"
-                  onClick={() => handleMoveBlock(block._id, "down")}
-                  disabled={idx === blocks.length - 1}
-                  title="Nach unten"
-                >
-                  ↓
-                </button>
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs text-gray-400">#{idx + 1}</span>
-                  <h3 className="font-semibold text-gray-900 truncate">{block.title}</h3>
-                  <Badge variant="blue">{revealRuleLabel(block.revealRule)}</Badge>
-                </div>
-                <p className="text-sm text-gray-600 line-clamp-2">{block.content}</p>
-              </div>
-
-              <div className="flex gap-2 flex-shrink-0">
-                <button
-                  className="btn-secondary text-xs"
-                  onClick={() => setEditingBlockId(block._id)}
-                >
-                  Bearbeiten
-                </button>
-                <button
-                  className="btn-danger text-xs"
-                  onClick={() =>
-                    confirm("Block löschen?") &&
-                    token &&
-                    deleteBlock({ token, blockId: block._id as Id<"handoutBlocks"> })
-                  }
-                >
-                  ×
-                </button>
-              </div>
+      <DndProvider backend={HTML5Backend}>
+        <div className="space-y-3 mb-6">
+          {blocks.length === 0 && (
+            <div className="card text-center py-8 text-gray-500">
+              <p>Noch keine Blöcke. Fügen Sie den ersten Inhalt hinzu.</p>
             </div>
-          </div>
-        ))}
-      </div>
+          )}
+
+          {blocks.map((block, idx) => (
+            <DraggableBlock
+              key={block._id}
+              block={block}
+              index={idx}
+              totalBlocks={blocks.length}
+              revealRuleLabel={revealRuleLabel}
+              onMoveBlock={handleMoveBlock}
+              onDrop={handleDrop}
+              onEdit={(id) => setEditingBlockId(id)}
+              onDelete={(id) => {
+                if (confirm("Block löschen?") && token) {
+                  deleteBlock({ token, blockId: id as Id<"handoutBlocks"> });
+                }
+              }}
+            />
+          ))}
+        </div>
+      </DndProvider>
 
       <button
         className="btn-secondary w-full"
