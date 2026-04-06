@@ -15,12 +15,14 @@ import type { Id } from "@convex/_generated/dataModel";
 
 export default function SessionPage() {
   const params = useParams();
-  const sessionId = params.id as string;
+  const routeSessionId = typeof params.id === "string" ? params.id : null;
   const { token, isDemo } = useAuthStore();
 
   const data = useQuery(
     api.sessions.getPresenterSessionState,
-    token ? { token, sessionId: sessionId as Id<"presentationSessions"> } : "skip"
+    token && routeSessionId
+      ? { token, sessionId: routeSessionId as Id<"presentationSessions"> }
+      : "skip"
   );
 
   const startSession = useMutation(api.sessions.startSession);
@@ -30,7 +32,7 @@ export default function SessionPage() {
 
   const viewerCount = useQuery(
     api.viewers.getViewerCount,
-    token && data ? { token, sessionId: sessionId as Id<"presentationSessions"> } : "skip"
+    token && data ? { token, sessionId: data.session._id } : "skip"
   );
 
   const [isQROpen, setIsQROpen] = useState(false);
@@ -49,6 +51,7 @@ export default function SessionPage() {
   }
 
   const { session, handout, blocks } = data;
+  const sessionId = session._id;
   const publicUrl = `/h/${session.publicToken}`;
   const fullPublicUrl = typeof window !== "undefined"
     ? `${window.location.origin}${publicUrl}`
