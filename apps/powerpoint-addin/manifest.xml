@@ -20,8 +20,7 @@
   <SupportUrl DefaultValue="https://localhost:3001"/>
 
   <AppDomains>
-    <AppDomain>localhost:3001</AppDomain>
-    <AppDomain>localhost:3000</AppDomain>
+    <AppDomain>https://localhost</AppDomain>
   </AppDomains>
 
   <Hosts>
