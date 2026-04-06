@@ -32,9 +32,11 @@ export default function SessionPage() {
   const unTriggerBlock = useMutation(api.sessions.unTriggerBlockManually);
 
   const [viewerCount, setViewerCount] = useState<number | undefined>(undefined);
+  const activeSessionId = data?.session._id;
+  const activeSessionStatus = data?.session.status;
 
   useEffect(() => {
-    if (!token || !data || data.session.status !== "live") {
+    if (!token || !activeSessionId || activeSessionStatus !== "live") {
       setViewerCount(undefined);
       return;
     }
@@ -45,10 +47,14 @@ export default function SessionPage() {
       try {
         const count = await convexClient.query(api.viewers.getViewerCount, {
           token,
-          sessionId: data.session._id,
+          sessionId: activeSessionId,
         });
         if (isActive) setViewerCount(count);
-      } catch {
+      } catch (error) {
+        console.error("Failed to fetch viewer count", {
+          sessionId: activeSessionId,
+          error,
+        });
         if (isActive) setViewerCount(0);
       }
     };
@@ -62,7 +68,7 @@ export default function SessionPage() {
       isActive = false;
       window.clearInterval(interval);
     };
-  }, [token, data]);
+  }, [token, activeSessionId, activeSessionStatus]);
 
   const [isQROpen, setIsQROpen] = useState(false);
   const [activeView, setActiveView] = useState<"control" | "preview">("control");
