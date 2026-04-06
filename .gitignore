@@ -5,7 +5,6 @@ dist/
 .env
 *.env
 .convex/
-convex/_generated/api.js
 .DS_Store
 Thumbs.db
 *.log
