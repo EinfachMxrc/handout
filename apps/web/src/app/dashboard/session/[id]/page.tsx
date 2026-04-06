@@ -3,7 +3,7 @@
 import { useQuery, useMutation } from "convex/react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api } from "@convex/_generated/api";
 import { useAuthStore } from "@/store/authStore";
 import { SlideControls } from "@/components/dashboard/SlideControls";
@@ -14,7 +14,7 @@ import remarkGfm from "remark-gfm";
 import type { Id } from "@convex/_generated/dataModel";
 import { convexClient } from "@/lib/convex";
 
-const VIEWER_COUNT_POLL_INTERVAL_MS = 10_000;
+const VIEWER_COUNT_POLL_INTERVAL = 10_000; // ms
 
 export default function SessionPage() {
   const params = useParams();
@@ -35,8 +35,8 @@ export default function SessionPage() {
 
   const [viewerCount, setViewerCount] = useState<number>(0);
   const [isViewerCountLoaded, setIsViewerCountLoaded] = useState(false);
-  const activeSessionId = data?.session._id;
-  const activeSessionStatus = data?.session.status;
+  const activeSessionId = useMemo(() => data?.session._id, [data?.session._id]);
+  const activeSessionStatus = useMemo(() => data?.session.status, [data?.session.status]);
 
   useEffect(() => {
     if (!token || !activeSessionId || activeSessionStatus !== "live") {
@@ -45,7 +45,7 @@ export default function SessionPage() {
       return;
     }
 
-    let isActive = true;
+    let isMounted = true;
     let isFetching = false;
 
     const fetchViewerCount = async () => {
@@ -56,7 +56,7 @@ export default function SessionPage() {
           token,
           sessionId: activeSessionId,
         });
-        if (isActive) {
+        if (isMounted) {
           setViewerCount(count);
           setIsViewerCountLoaded(true);
         }
@@ -65,7 +65,7 @@ export default function SessionPage() {
           sessionId: activeSessionId,
           error,
         });
-        if (isActive) {
+        if (isMounted) {
           setViewerCount(0);
           setIsViewerCountLoaded(true);
         }
@@ -77,10 +77,10 @@ export default function SessionPage() {
     void fetchViewerCount();
     const interval = window.setInterval(() => {
       void fetchViewerCount();
-    }, VIEWER_COUNT_POLL_INTERVAL_MS);
+    }, VIEWER_COUNT_POLL_INTERVAL);
 
     return () => {
-      isActive = false;
+      isMounted = false;
       window.clearInterval(interval);
     };
   }, [token, activeSessionId, activeSessionStatus]);
