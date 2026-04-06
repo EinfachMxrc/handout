@@ -85,9 +85,16 @@ export const getViewerCount = query({
       const presenter = await requirePresenter(ctx, args.token);
 
       const session = await ctx.db.get(args.sessionId);
-      if (!session || session.presenterId !== presenter._id) {
-        console.warn("getViewerCount unauthorized or missing session", {
+      if (!session) {
+        console.warn("getViewerCount session not found", {
           sessionId: args.sessionId,
+        });
+        return 0;
+      }
+      if (session.presenterId !== presenter._id) {
+        console.warn("getViewerCount unauthorized presenter/session access", {
+          sessionId: args.sessionId,
+          presenterId: presenter._id,
         });
         return 0;
       }
