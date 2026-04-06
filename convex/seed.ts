@@ -6,7 +6,7 @@
  */
 
 import { internalMutation } from "./_generated/server";
-import { generateToken, simpleHash } from "./_utils";
+import { DEMO_EMAIL, DEMO_PASSWORD, generateToken, sha256v2Hash } from "./_utils";
 
 export const seedDemo = internalMutation({
   args: {},
@@ -14,18 +14,30 @@ export const seedDemo = internalMutation({
     // Create demo presenter
     const existing = await ctx.db
       .query("presenters")
-      .withIndex("by_email", (q) => q.eq("email", "demo@example.com"))
+      .withIndex("by_email", (q) => q.eq("email", DEMO_EMAIL))
       .first();
 
     let presenterId = existing?._id;
 
     if (!existing) {
       presenterId = await ctx.db.insert("presenters", {
-        email: "demo@example.com",
-        passwordHash: simpleHash("demo1234"),
+        email: DEMO_EMAIL,
+        passwordHash: await sha256v2Hash(DEMO_PASSWORD),
+        isDemo: true,
         name: "Demo Presenter",
         createdAt: Date.now(),
       });
+    } else {
+      const updates: { isDemo?: boolean; passwordHash?: string } = {};
+      if (!existing.isDemo) {
+        updates.isDemo = true;
+      }
+      if (!existing.passwordHash.startsWith("sha256v2_")) {
+        updates.passwordHash = await sha256v2Hash(DEMO_PASSWORD);
+      }
+      if (Object.keys(updates).length > 0) {
+        await ctx.db.patch(existing._id, updates);
+      }
     }
 
     if (!presenterId) throw new Error("No presenter ID");
@@ -116,7 +128,7 @@ export const seedDemo = internalMutation({
 
     return {
       message: "Demo-Daten erfolgreich angelegt!",
-      login: { email: "demo@example.com", password: "demo1234" },
+      login: { email: DEMO_EMAIL, password: DEMO_PASSWORD },
       publicHandoutUrl: `/h/${publicToken}`,
       sessionId,
       presenterToken: token,

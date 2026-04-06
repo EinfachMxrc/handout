@@ -14,10 +14,11 @@ export default defineSchema({
   // ---- Presenters (simple password-based auth for MVP) ----
   presenters: defineTable({
     email: v.string(),
-    /** MVP: simple 32-bit hash via simpleHash() in _utils.ts – replace with bcrypt for production */
     passwordHash: v.string(),
     name: v.optional(v.string()),
     createdAt: v.number(),
+    /** True for the shared demo account – all write mutations are blocked */
+    isDemo: v.optional(v.boolean()),
   }).index("by_email", ["email"]),
 
   // ---- Presenter Sessions (auth tokens) ----

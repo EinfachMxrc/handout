@@ -11,6 +11,7 @@ interface SlideControlsProps {
   currentSlide: number;
   totalSlides?: number;
   syncMode: string;
+  disabled?: boolean;
 }
 
 export function SlideControls({
@@ -18,6 +19,7 @@ export function SlideControls({
   currentSlide,
   totalSlides,
   syncMode,
+  disabled = false,
 }: SlideControlsProps) {
   const { token } = useAuthStore();
   const nextSlide = useMutation(api.sessions.nextSlide);
@@ -29,7 +31,7 @@ export function SlideControls({
   const [isLoading, setIsLoading] = useState(false);
 
   const handleAction = async (action: () => Promise<any>) => {
-    if (!token) return;
+    if (!token || disabled) return;
     setIsLoading(true);
     try {
       await action();
@@ -40,7 +42,7 @@ export function SlideControls({
 
   const handleJump = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!token || !jumpInput) return;
+    if (!token || disabled || !jumpInput) return;
     const slide = parseInt(jumpInput);
     if (isNaN(slide) || slide < 1) return;
     await handleAction(() =>
@@ -89,7 +91,7 @@ export function SlideControls({
               previousSlide({ token: token!, sessionId: sessionId as Id<"presentationSessions"> })
             )
           }
-          disabled={isLoading || currentSlide <= 1}
+          disabled={disabled || isLoading || currentSlide <= 1}
         >
           ← Zurück
         </button>
@@ -100,7 +102,7 @@ export function SlideControls({
               nextSlide({ token: token!, sessionId: sessionId as Id<"presentationSessions"> })
             )
           }
-          disabled={isLoading || (totalSlides !== undefined && currentSlide >= totalSlides)}
+          disabled={disabled || isLoading || (totalSlides !== undefined && currentSlide >= totalSlides)}
         >
           Weiter →
         </button>
@@ -116,8 +118,9 @@ export function SlideControls({
           placeholder="Folie Nr."
           min={1}
           max={totalSlides}
+          disabled={disabled}
         />
-        <button type="submit" className="btn-secondary px-4" disabled={isLoading}>
+        <button type="submit" className="btn-secondary px-4" disabled={disabled || isLoading}>
           Springen
         </button>
       </form>
@@ -136,8 +139,10 @@ export function SlideControls({
               }`}
               onClick={() =>
                 token &&
+                !disabled &&
                 setSyncMode({ token, sessionId: sessionId as Id<"presentationSessions">, syncMode: mode })
               }
+              disabled={disabled}
             >
               {syncModeLabel[mode]}
             </button>

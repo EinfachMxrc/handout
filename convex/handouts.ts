@@ -5,6 +5,7 @@
 import { mutation, query } from "./_generated/server";
 import type { QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
+import { assertNotDemo } from "./_utils";
 
 const revealRuleArg = v.object({
   revealSlide: v.number(),
@@ -88,6 +89,7 @@ export const createHandout = mutation({
   },
   handler: async (ctx, args) => {
     const presenter = await requirePresenter(ctx, args.token);
+    assertNotDemo(presenter);
     const now = Date.now();
     return ctx.db.insert("handouts", {
       presenterId: presenter._id,
@@ -108,6 +110,7 @@ export const updateHandout = mutation({
   },
   handler: async (ctx, args) => {
     const presenter = await requirePresenter(ctx, args.token);
+    assertNotDemo(presenter);
     const handout = await ctx.db.get(args.handoutId);
     if (!handout || handout.presenterId !== presenter._id) {
       throw new Error("Nicht gefunden");
@@ -125,6 +128,7 @@ export const deleteHandout = mutation({
   args: { token: v.string(), handoutId: v.id("handouts") },
   handler: async (ctx, args) => {
     const presenter = await requirePresenter(ctx, args.token);
+    assertNotDemo(presenter);
     const handout = await ctx.db.get(args.handoutId);
     if (!handout || handout.presenterId !== presenter._id) {
       throw new Error("Nicht gefunden");
@@ -155,6 +159,7 @@ export const createBlock = mutation({
   },
   handler: async (ctx, args) => {
     const presenter = await requirePresenter(ctx, args.token);
+    assertNotDemo(presenter);
     const handout = await ctx.db.get(args.handoutId);
     if (!handout || handout.presenterId !== presenter._id) {
       throw new Error("Nicht gefunden");
@@ -190,6 +195,7 @@ export const updateBlock = mutation({
   },
   handler: async (ctx, args) => {
     const presenter = await requirePresenter(ctx, args.token);
+    assertNotDemo(presenter);
     const block = await ctx.db.get(args.blockId);
     if (!block) throw new Error("Block nicht gefunden");
 
@@ -211,6 +217,7 @@ export const deleteBlock = mutation({
   args: { token: v.string(), blockId: v.id("handoutBlocks") },
   handler: async (ctx, args) => {
     const presenter = await requirePresenter(ctx, args.token);
+    assertNotDemo(presenter);
     const block = await ctx.db.get(args.blockId);
     if (!block) throw new Error("Block nicht gefunden");
 
@@ -232,6 +239,7 @@ export const reorderBlocks = mutation({
   },
   handler: async (ctx, args) => {
     const presenter = await requirePresenter(ctx, args.token);
+    assertNotDemo(presenter);
     const handout = await ctx.db.get(args.handoutId);
     if (!handout || handout.presenterId !== presenter._id) {
       throw new Error("Nicht autorisiert");

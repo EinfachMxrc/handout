@@ -24,7 +24,7 @@ export default function HomePage() {
         </div>
         <p className="mt-8 text-sm text-gray-500">
           Demo: Erstellen Sie ein Konto oder verwenden Sie den Demo-Account{" "}
-          <code className="bg-gray-200 px-1 rounded">demo@example.com</code>.
+          <code className="bg-gray-200 px-1 rounded">demo@example.com</code> (nur Lesezugriff).
         </p>
       </div>
     </div>

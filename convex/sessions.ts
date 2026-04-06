@@ -6,7 +6,7 @@
 import { mutation, query } from "./_generated/server";
 import type { QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
-import { generateToken, isBlockVisible } from "./_utils";
+import { generateToken, isBlockVisible, assertNotDemo } from "./_utils";
 
 // ---- AUTH HELPER ----
 async function requirePresenter(ctx: Pick<QueryCtx, "db">, token: string) {
@@ -152,6 +152,7 @@ export const createSession = mutation({
   },
   handler: async (ctx, args) => {
     const presenter = await requirePresenter(ctx, args.token);
+    assertNotDemo(presenter);
     const handout = await ctx.db.get(args.handoutId);
     if (!handout || handout.presenterId !== presenter._id) {
       throw new Error("Handout nicht gefunden");
@@ -182,6 +183,7 @@ export const startSession = mutation({
   },
   handler: async (ctx, args) => {
     const presenter = await requirePresenter(ctx, args.token);
+    assertNotDemo(presenter);
     const session = await ctx.db.get(args.sessionId);
     if (!session || session.presenterId !== presenter._id) {
       throw new Error("Session nicht gefunden");
@@ -202,6 +204,7 @@ export const stopSession = mutation({
   },
   handler: async (ctx, args) => {
     const presenter = await requirePresenter(ctx, args.token);
+    assertNotDemo(presenter);
     const session = await ctx.db.get(args.sessionId);
     if (!session || session.presenterId !== presenter._id) {
       throw new Error("Session nicht gefunden");
@@ -222,6 +225,7 @@ export const deleteSession = mutation({
   },
   handler: async (ctx, args) => {
     const presenter = await requirePresenter(ctx, args.token);
+    assertNotDemo(presenter);
     const session = await ctx.db.get(args.sessionId);
     if (!session || session.presenterId !== presenter._id) {
       throw new Error("Session nicht gefunden");
@@ -242,6 +246,7 @@ export const setCurrentSlide = mutation({
   },
   handler: async (ctx, args) => {
     const presenter = await requirePresenter(ctx, args.token);
+    assertNotDemo(presenter);
     const session = await ctx.db.get(args.sessionId);
     if (!session || session.presenterId !== presenter._id) {
       throw new Error("Session nicht gefunden");
@@ -269,6 +274,7 @@ export const nextSlide = mutation({
   },
   handler: async (ctx, args) => {
     const presenter = await requirePresenter(ctx, args.token);
+    assertNotDemo(presenter);
     const session = await ctx.db.get(args.sessionId);
     if (!session || session.presenterId !== presenter._id) {
       throw new Error("Session nicht gefunden");
@@ -294,6 +300,7 @@ export const previousSlide = mutation({
   },
   handler: async (ctx, args) => {
     const presenter = await requirePresenter(ctx, args.token);
+    assertNotDemo(presenter);
     const session = await ctx.db.get(args.sessionId);
     if (!session || session.presenterId !== presenter._id) {
       throw new Error("Session nicht gefunden");
@@ -317,6 +324,7 @@ export const jumpToSlide = mutation({
   },
   handler: async (ctx, args) => {
     const presenter = await requirePresenter(ctx, args.token);
+    assertNotDemo(presenter);
     const session = await ctx.db.get(args.sessionId);
     if (!session || session.presenterId !== presenter._id) {
       throw new Error("Session nicht gefunden");
@@ -339,6 +347,7 @@ export const setSyncMode = mutation({
   },
   handler: async (ctx, args) => {
     const presenter = await requirePresenter(ctx, args.token);
+    assertNotDemo(presenter);
     const session = await ctx.db.get(args.sessionId);
     if (!session || session.presenterId !== presenter._id) {
       throw new Error("Session nicht gefunden");
@@ -359,6 +368,7 @@ export const triggerBlockManually = mutation({
   },
   handler: async (ctx, args) => {
     const presenter = await requirePresenter(ctx, args.token);
+    assertNotDemo(presenter);
     const session = await ctx.db.get(args.sessionId);
     if (!session || session.presenterId !== presenter._id) {
       throw new Error("Session nicht gefunden");
@@ -381,6 +391,7 @@ export const unTriggerBlockManually = mutation({
   },
   handler: async (ctx, args) => {
     const presenter = await requirePresenter(ctx, args.token);
+    assertNotDemo(presenter);
     const session = await ctx.db.get(args.sessionId);
     if (!session || session.presenterId !== presenter._id) {
       throw new Error("Session nicht gefunden");

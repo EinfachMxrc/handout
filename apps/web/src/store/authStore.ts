@@ -1,5 +1,5 @@
 /**
- * Auth store – local UI state for presenter authentication.
+ * Auth store - local UI state for presenter authentication.
  * The auth token is the bridge to Convex; presenter identity lives in Convex.
  */
 import { create } from "zustand";
@@ -9,8 +9,9 @@ interface AuthState {
   token: string | null;
   presenterName: string | null;
   presenterEmail: string | null;
+  isDemo: boolean;
   isLoading: boolean;
-  setAuth: (token: string, name?: string, email?: string) => void;
+  setAuth: (token: string, name?: string, email?: string, isDemo?: boolean) => void;
   clearAuth: () => void;
   setLoading: (loading: boolean) => void;
 }
@@ -21,11 +22,22 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       presenterName: null,
       presenterEmail: null,
+      isDemo: false,
       isLoading: false,
-      setAuth: (token, name, email) =>
-        set({ token, presenterName: name ?? null, presenterEmail: email ?? null }),
+      setAuth: (token, name, email, isDemo = false) =>
+        set({
+          token,
+          presenterName: name ?? null,
+          presenterEmail: email ?? null,
+          isDemo,
+        }),
       clearAuth: () =>
-        set({ token: null, presenterName: null, presenterEmail: null }),
+        set({
+          token: null,
+          presenterName: null,
+          presenterEmail: null,
+          isDemo: false,
+        }),
       setLoading: (isLoading) => set({ isLoading }),
     }),
     {
@@ -34,6 +46,7 @@ export const useAuthStore = create<AuthState>()(
         token: state.token,
         presenterName: state.presenterName,
         presenterEmail: state.presenterEmail,
+        isDemo: state.isDemo,
       }),
     }
   )
