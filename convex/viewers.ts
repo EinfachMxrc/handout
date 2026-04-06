@@ -86,6 +86,9 @@ export const getViewerCount = query({
 
       const session = await ctx.db.get(args.sessionId);
       if (!session || session.presenterId !== presenter._id) {
+        console.warn("getViewerCount unauthorized or missing session", {
+          sessionId: args.sessionId,
+        });
         return 0;
       }
 
@@ -96,7 +99,8 @@ export const getViewerCount = query({
         .collect();
 
       return heartbeats.filter((h) => h.lastSeenAt > cutoff).length;
-    } catch {
+    } catch (error) {
+      console.error("getViewerCount failed", { sessionId: args.sessionId, error });
       return 0;
     }
   },
