@@ -3,7 +3,7 @@
 import { useQuery, useMutation } from "convex/react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api } from "@convex/_generated/api";
 import { useAuthStore } from "@/store/authStore";
 import { SlideControls } from "@/components/dashboard/SlideControls";
@@ -12,6 +12,9 @@ import { Badge } from "@/components/ui/Badge";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Id } from "@convex/_generated/dataModel";
+import { convexClient } from "@/lib/convex";
+
+const VIEWER_COUNT_POLL_INTERVAL = 10_000; // ms
 
 export default function SessionPage() {
   const params = useParams();
@@ -30,10 +33,57 @@ export default function SessionPage() {
   const triggerBlock = useMutation(api.sessions.triggerBlockManually);
   const unTriggerBlock = useMutation(api.sessions.unTriggerBlockManually);
 
-  const viewerCount = useQuery(
-    api.viewers.getViewerCount,
-    token && data ? { token, sessionId: data.session._id } : "skip"
-  );
+  const [viewerCount, setViewerCount] = useState<number>(0);
+  const [isViewerCountLoaded, setIsViewerCountLoaded] = useState(false);
+  const activeSessionId = useMemo(() => data?.session._id, [data?.session._id]);
+  const activeSessionStatus = useMemo(() => data?.session.status, [data?.session.status]);
+
+  useEffect(() => {
+    if (!token || !activeSessionId || activeSessionStatus !== "live") {
+      setViewerCount(0);
+      setIsViewerCountLoaded(false);
+      return;
+    }
+
+    let isMounted = true;
+    let isFetching = false;
+
+    const fetchViewerCount = async () => {
+      if (isFetching) return;
+      isFetching = true;
+      try {
+        const count = await convexClient.query(api.viewers.getViewerCount, {
+          token,
+          sessionId: activeSessionId,
+        });
+        if (isMounted) {
+          setViewerCount(count);
+          setIsViewerCountLoaded(true);
+        }
+      } catch (error) {
+        console.error("Failed to fetch viewer count", {
+          sessionId: activeSessionId,
+          error,
+        });
+        if (isMounted) {
+          setViewerCount(0);
+          setIsViewerCountLoaded(true);
+        }
+      } finally {
+        isFetching = false;
+      }
+    };
+
+    void fetchViewerCount();
+    const interval = window.setInterval(() => {
+      void fetchViewerCount();
+    }, VIEWER_COUNT_POLL_INTERVAL);
+
+    return () => {
+      isMounted = false;
+      window.clearInterval(interval);
+    };
+  }, [token, activeSessionId, activeSessionStatus]);
 
   const [isQROpen, setIsQROpen] = useState(false);
   const [activeView, setActiveView] = useState<"control" | "preview">("control");
@@ -101,7 +151,7 @@ export default function SessionPage() {
           <Badge variant={statusColor[session.status] ?? "gray"}>
             {statusLabel[session.status] ?? session.status}
           </Badge>
-          {session.status === "live" && viewerCount !== undefined && (
+          {session.status === "live" && isViewerCountLoaded && (
             <span className="text-sm text-gray-500 flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
               {viewerCount} {viewerCount === 1 ? "Zuschauer" : "Zuschauer"}
