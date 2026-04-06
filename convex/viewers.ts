@@ -81,20 +81,35 @@ export const getViewerCount = query({
     sessionId: v.id("presentationSessions"),
   },
   handler: async (ctx, args) => {
-    const presenter = await requirePresenter(ctx, args.token);
+    try {
+      const presenter = await requirePresenter(ctx, args.token);
 
-    const session = await ctx.db.get(args.sessionId);
-    if (!session || session.presenterId !== presenter._id) {
-      throw new Error("Nicht autorisiert");
+      const session = await ctx.db.get(args.sessionId);
+      if (!session) {
+        console.warn("getViewerCount session not found", {
+          sessionId: args.sessionId,
+        });
+        return 0;
+      }
+      if (session.presenterId !== presenter._id) {
+        console.warn("getViewerCount unauthorized presenter/session access", {
+          sessionId: args.sessionId,
+          presenterId: presenter._id,
+        });
+        return 0;
+      }
+
+      const cutoff = Date.now() - ACTIVE_WINDOW_MS;
+      const heartbeats = await ctx.db
+        .query("viewerHeartbeats")
+        .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
+        .collect();
+
+      return heartbeats.filter((h) => h.lastSeenAt > cutoff).length;
+    } catch (error) {
+      console.error("getViewerCount failed", { sessionId: args.sessionId, error });
+      return 0;
     }
-
-    const cutoff = Date.now() - ACTIVE_WINDOW_MS;
-    const heartbeats = await ctx.db
-      .query("viewerHeartbeats")
-      .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
-      .collect();
-
-    return heartbeats.filter((h) => h.lastSeenAt > cutoff).length;
   },
 });
 
