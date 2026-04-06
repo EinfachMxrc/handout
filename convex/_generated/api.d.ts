@@ -8,12 +8,16 @@ import type * as auth from "../auth.js";
 import type * as handouts from "../handouts.js";
 import type * as sessions from "../sessions.js";
 import type * as seed from "../seed.js";
+import type * as viewers from "../viewers.js";
+import type * as init from "../init.js";
 
 export type Mounts = {
   auth: typeof auth;
   handouts: typeof handouts;
   sessions: typeof sessions;
   seed: typeof seed;
+  viewers: typeof viewers;
+  init: typeof init;
 };
 
 declare const fullApi: ApiFromModules<Mounts>;
