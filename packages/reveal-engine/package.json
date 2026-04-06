@@ -14,7 +14,7 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
-    "build": "tsc --noEmit false --emitDeclarationOnly false",
+    "build": "tsc",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
