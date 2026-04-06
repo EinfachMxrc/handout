@@ -14,13 +14,14 @@
   <DisplayName DefaultValue="Slide Handout"/>
   <Description DefaultValue="Live-Handout für Präsentationen – Inhalte schalten sich folienweise frei."/>
 
-  <IconUrl DefaultValue="https://localhost:3000/icon-32.png"/>
-  <HighResolutionIconUrl DefaultValue="https://localhost:3000/icon-64.png"/>
+  <IconUrl DefaultValue="https://handoutmarc.netlify.app/icon-32.png"/>
+  <HighResolutionIconUrl DefaultValue="https://handoutmarc.netlify.app/icon-64.png"/>
 
-  <SupportUrl DefaultValue="https://localhost:3001"/>
+  <SupportUrl DefaultValue="https://handoutmarc.netlify.app"/>
 
   <AppDomains>
     <AppDomain>localhost</AppDomain>
+    <AppDomain>handoutmarc.netlify.app</AppDomain>
   </AppDomains>
 
   <Hosts>
@@ -28,7 +29,7 @@
   </Hosts>
 
   <DefaultSettings>
-    <SourceLocation DefaultValue="https://localhost:3001/"/>
+    <SourceLocation DefaultValue="https://handoutmarc.netlify.app/"/>
   </DefaultSettings>
 
   <Permissions>ReadWriteDocument</Permissions>
@@ -76,13 +77,13 @@
     </Hosts>
     <Resources>
       <bt:Images>
-        <bt:Image id="Icon.16x16" DefaultValue="https://localhost:3000/icon-16.png"/>
-        <bt:Image id="Icon.32x32" DefaultValue="https://localhost:3000/icon-32.png"/>
-        <bt:Image id="Icon.80x80" DefaultValue="https://localhost:3000/icon-80.png"/>
+        <bt:Image id="Icon.16x16" DefaultValue="https://handoutmarc.netlify.app/icon-16.png"/>
+        <bt:Image id="Icon.32x32" DefaultValue="https://handoutmarc.netlify.app/icon-32.png"/>
+        <bt:Image id="Icon.80x80" DefaultValue="https://handoutmarc.netlify.app/icon-80.png"/>
       </bt:Images>
       <bt:Urls>
-        <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://localhost:3001"/>
-        <bt:Url id="Taskpane.Url" DefaultValue="https://localhost:3001/"/>
+        <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://handoutmarc.netlify.app"/>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://handoutmarc.netlify.app/"/>
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GetStarted.Title" DefaultValue="Slide Handout – Bereit!"/>
