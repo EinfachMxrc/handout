@@ -14,6 +14,8 @@ import remarkGfm from "remark-gfm";
 import type { Id } from "@convex/_generated/dataModel";
 import { convexClient } from "@/lib/convex";
 
+const VIEWER_COUNT_POLL_INTERVAL_MS = 10_000;
+
 export default function SessionPage() {
   const params = useParams();
   const routeSessionId = typeof params.id === "string" ? params.id : null;
@@ -31,13 +33,13 @@ export default function SessionPage() {
   const triggerBlock = useMutation(api.sessions.triggerBlockManually);
   const unTriggerBlock = useMutation(api.sessions.unTriggerBlockManually);
 
-  const [viewerCount, setViewerCount] = useState<number | undefined>(undefined);
+  const [viewerCount, setViewerCount] = useState<number | null>(null);
   const activeSessionId = data?.session._id;
   const activeSessionStatus = data?.session.status;
 
   useEffect(() => {
     if (!token || !activeSessionId || activeSessionStatus !== "live") {
-      setViewerCount(undefined);
+      setViewerCount(null);
       return;
     }
 
@@ -62,7 +64,7 @@ export default function SessionPage() {
     void fetchViewerCount();
     const interval = window.setInterval(() => {
       void fetchViewerCount();
-    }, 10_000);
+    }, VIEWER_COUNT_POLL_INTERVAL_MS);
 
     return () => {
       isActive = false;
@@ -136,7 +138,7 @@ export default function SessionPage() {
           <Badge variant={statusColor[session.status] ?? "gray"}>
             {statusLabel[session.status] ?? session.status}
           </Badge>
-          {session.status === "live" && viewerCount !== undefined && (
+          {session.status === "live" && viewerCount !== null && (
             <span className="text-sm text-gray-500 flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
               {viewerCount} {viewerCount === 1 ? "Zuschauer" : "Zuschauer"}
