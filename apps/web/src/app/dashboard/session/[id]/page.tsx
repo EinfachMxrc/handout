@@ -30,6 +30,14 @@ export default function SessionPage() {
 
   const [isQROpen, setIsQROpen] = useState(false);
   const [activeView, setActiveView] = useState<"control" | "preview">("control");
+  const [isAddinOpen, setIsAddinOpen] = useState(false);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  const copyToClipboard = (key: string, value: string) => {
+    navigator.clipboard.writeText(value);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2000);
+  };
 
   if (!data) {
     return <div className="text-center py-12 text-gray-500">Lädt Session...</div>;
@@ -157,6 +165,61 @@ export default function SessionPage() {
               totalSlides={session.totalSlides}
               syncMode={session.syncMode}
             />
+          </div>
+
+          {/* Add-in Verbindungsinfo */}
+          <div className="card">
+            <button
+              className="w-full flex items-center justify-between text-sm font-semibold text-gray-900"
+              onClick={() => setIsAddinOpen(!isAddinOpen)}
+            >
+              <span>Add-in verbinden</span>
+              <span className="text-gray-400 text-xs">{isAddinOpen ? "▲ Einklappen" : "▼ Ausklappen"}</span>
+            </button>
+
+            {isAddinOpen && (
+              <div className="mt-3 space-y-3">
+                <p className="text-xs text-gray-500">
+                  Kopiere diese drei Werte in die Einstellungen des PowerPoint Add-ins.
+                </p>
+                {[
+                  {
+                    key: "url",
+                    label: "Convex URL",
+                    value: process.env.NEXT_PUBLIC_CONVEX_URL ?? "(nicht gesetzt – pnpm setup ausführen)",
+                    mono: true,
+                  },
+                  {
+                    key: "token",
+                    label: "Presenter-Token",
+                    value: token ?? "",
+                    mono: true,
+                    secret: true,
+                  },
+                  {
+                    key: "session",
+                    label: "Session-ID",
+                    value: sessionId,
+                    mono: true,
+                  },
+                ].map(({ key, label, value, mono, secret }) => (
+                  <div key={key}>
+                    <div className="text-xs font-medium text-gray-600 mb-1">{label}</div>
+                    <div className="flex items-center gap-2">
+                      <code className={`flex-1 text-xs bg-gray-50 border border-gray-200 rounded px-2 py-1.5 truncate ${mono ? "font-mono" : ""}`}>
+                        {secret ? `${value.slice(0, 8)}${"•".repeat(Math.max(0, value.length - 8))}` : value}
+                      </code>
+                      <button
+                        className="text-xs px-2 py-1.5 rounded border border-gray-200 hover:bg-gray-100 flex-shrink-0 transition-colors"
+                        onClick={() => copyToClipboard(key, value)}
+                      >
+                        {copiedKey === key ? "✓" : "Kopieren"}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Block visibility list */}

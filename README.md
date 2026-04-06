@@ -48,30 +48,45 @@ pnpm install
 ### 2. Convex einrichten (interaktiv, einmalig)
 
 ```bash
-# Im Projekt-Root ausführen:
 npx convex dev
 ```
 
 Beim ersten Start:
 1. Mit Convex-Account einloggen (Browser öffnet sich)
 2. Neues Projekt erstellen oder bestehendes wählen
-3. Convex generiert `convex/_generated/` und gibt die URL aus
+3. Convex schreibt automatisch `.env.local` im Root-Verzeichnis
+4. Strg+C sobald „Convex ready" erscheint
 
-**Merken Sie sich die Convex-URL** (Format: `https://xxxx.convex.cloud`)
-
-### 3. Web-App konfigurieren
-
-```bash
-cp apps/web/.env.local.example apps/web/.env.local
-# Dann NEXT_PUBLIC_CONVEX_URL=https://ihre-url.convex.cloud eintragen
-```
-
-### 4. Demo-Daten laden (optional)
+### 3. Umgebungsvariablen in Apps übernehmen
 
 ```bash
-# Lädt Demo-Handout + Session + Presenter-Account (demo@example.com / demo1234)
-npx convex run seed:seedDemo
+pnpm setup
 ```
+
+Liest die Convex-URL aus dem Root-`.env.local` und schreibt sie in:
+- `apps/web/.env.local` → Next.js Web-App
+- `apps/powerpoint-addin/.env.local` → PowerPoint Add-in
+
+**Auf anderen Plattformen (Netlify, Railway, Render, VPS):**  
+Setze einfach eine Umgebungsvariable in der Plattform-UI:
+```
+NEXT_PUBLIC_CONVEX_URL=https://dein-projekt.convex.cloud
+```
+Die URL findest du im [Convex Dashboard](https://dashboard.convex.dev) unter Settings → URL.
+
+### 4. Demo-Daten (automatisch)
+
+Demo-Daten werden beim Start von `pnpm dev:convex` **automatisch** angelegt (idempotent – nur beim ersten Mal).
+
+```bash
+# Manuell erzwingen (z. B. nach Datenbank-Reset):
+pnpm seed
+# oder direkt:
+npx convex run init:init
+```
+
+**Demo-Account:** `demo@example.com` / `demo1234`  
+**Demo-Handout:** „PowerPoint Add-in Demo" – 10 Folien, alle Freischalt-Modi demonstriert
 
 ### 5. Entwicklungsserver starten
 
@@ -226,31 +241,27 @@ Folie 2 (zurück) → A + B noch sichtbar (highWaterSlide=5) ✓
 
 - [ ] **PowerPoint Fullscreen-Sync:** Im Vollbild-Präsentationsmodus kein zuverlässiger Auto-Sync (Office.js-Limitation) – Workaround: Hybrid/Manuell-Modus
 - [ ] **Auth:** MVP nutzt einfaches Hash-System – für Produktion: Clerk/Auth0/Convex Auth
-- [ ] **Add-in Token-Übergabe:** Token muss manuell aus Browser-DevTools kopiert werden – besser: QR-Code-Login-Flow
-- [ ] **Block-Reihenfolge:** Drag-and-Drop noch nicht implementiert (nur ↑/↓-Buttons)
-- [ ] **Markdown-Editor:** Aktuell Textarea – Rich-Text-Editor wäre ergonomischer
+- [x] **Add-in Token-Übergabe:** „Add-in verbinden"-Panel in der Session-Seite – Token, Session-ID und Convex-URL mit einem Klick kopierbar (kein DevTools mehr)
+- [x] **Block-Reihenfolge:** Drag-and-Drop implementiert (⠿ Handle ziehen) + ↑/↓-Buttons bleiben als Fallback
+- [x] **Markdown-Editor:** Vorschau-Tab im Block-Editor hinzugefügt
 - [ ] **Mehrere aktive Sessions:** Derzeit wird immer die neueste gezeigt
 - [ ] **Zuschauer-Count:** Keine Anzeige, wie viele Zuschauer das Handout gerade lesen
 - [ ] **Export:** PDF-Export über Browser-Druck – nativer Export wäre besser
+- [x] **Demo-Seeding:** Automatisch beim `pnpm dev:convex` via `--run init:init`
 
 ---
 
 ## Lokale Startbefehle (Kurzversion)
 
 ```bash
-# 1. Einmalig: Convex initialisieren
-npx convex dev   # folgen Sie den Anweisungen, dann Ctrl+C
+# 1. Einmalig: Convex initialisieren + Env-Dateien anlegen
+npx convex dev   # Anweisungen folgen, dann Ctrl+C
+pnpm setup       # URLs in Web-App & Add-in übernehmen
 
-# 2. .env.local setzen
-echo "NEXT_PUBLIC_CONVEX_URL=https://IHRE_URL.convex.cloud" > apps/web/.env.local
+# Terminal A – Convex Backend (startet + seed automatisch):
+pnpm dev:convex
 
-# 3. Demo-Daten laden
-npx convex run seed:seedDemo
-
-# Terminal A:
-npx convex dev
-
-# Terminal B:
+# Terminal B – Web-App:
 pnpm dev:web
 
 # Browser: http://localhost:3000

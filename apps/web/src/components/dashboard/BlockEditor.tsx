@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useMutation } from "convex/react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { api } from "@convex/_generated/api";
 import { useAuthStore } from "@/store/authStore";
 import type { Id } from "@convex/_generated/dataModel";
@@ -42,6 +44,7 @@ export function BlockEditor({ handoutId, block, onSave, onCancel }: BlockEditorP
   );
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
+  const [contentTab, setContentTab] = useState<"edit" | "preview">("edit");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,16 +113,52 @@ export function BlockEditor({ handoutId, block, onSave, onCancel }: BlockEditorP
       </div>
 
       <div>
-        <label className="label" htmlFor="block-content">Inhalt (Markdown)</label>
-        <textarea
-          id="block-content"
-          className="textarea"
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          rows={8}
-          placeholder="## Überschrift&#10;&#10;Inhalt in Markdown..."
-          required
-        />
+        <div className="flex items-center justify-between mb-1">
+          <label className="label" htmlFor="block-content">Inhalt (Markdown)</label>
+          <div className="flex gap-1 bg-gray-100 p-0.5 rounded-md">
+            <button
+              type="button"
+              className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                contentTab === "edit"
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+              onClick={() => setContentTab("edit")}
+            >
+              Bearbeiten
+            </button>
+            <button
+              type="button"
+              className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                contentTab === "preview"
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+              onClick={() => setContentTab("preview")}
+            >
+              Vorschau
+            </button>
+          </div>
+        </div>
+        {contentTab === "edit" ? (
+          <textarea
+            id="block-content"
+            className="textarea"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            rows={8}
+            placeholder="## Überschrift&#10;&#10;Inhalt in Markdown..."
+            required
+          />
+        ) : (
+          <div className="border border-gray-300 rounded-lg p-4 min-h-[12rem] bg-white prose prose-sm max-w-none markdown-content">
+            {content ? (
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+            ) : (
+              <p className="text-gray-400 text-sm">Noch kein Inhalt eingegeben.</p>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="border-t pt-4">
