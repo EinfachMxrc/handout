@@ -50,6 +50,17 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index("by_handout", ["handoutId"]),
 
+  // ---- Viewer Heartbeats (für Zuschauer-Count) ----
+  viewerHeartbeats: defineTable({
+    sessionId: v.id("presentationSessions"),
+    /** Zufällige Client-ID, in sessionStorage des Zuschauers gespeichert */
+    viewerId: v.string(),
+    lastSeenAt: v.number(),
+  })
+    .index("by_session", ["sessionId"])
+    .index("by_session_viewer", ["sessionId", "viewerId"])
+    .index("by_lastSeenAt", ["lastSeenAt"]),
+
   // ---- Presentation Sessions ----
   presentationSessions: defineTable({
     handoutId: v.id("handouts"),

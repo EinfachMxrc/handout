@@ -6,7 +6,7 @@
 
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { generateToken, simpleHash } from "./_utils";
+import { generateToken, pbkdf2Hash, verifyPassword } from "./_utils";
 
 const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
@@ -27,7 +27,7 @@ export const register = mutation({
       throw new Error("E-Mail-Adresse bereits registriert");
     }
 
-    const passwordHash = simpleHash(args.password);
+    const passwordHash = await pbkdf2Hash(args.password);
     const presenterId = await ctx.db.insert("presenters", {
       email: args.email,
       passwordHash,
@@ -64,9 +64,17 @@ export const login = mutation({
       throw new Error("Ungültige Anmeldedaten");
     }
 
-    const passwordHash = simpleHash(args.password);
-    if (presenter.passwordHash !== passwordHash) {
+    // Verify against stored hash (supports pbkdf2_, sha256_, mvp_ prefixes)
+    const isValid = await verifyPassword(args.password, presenter.passwordHash);
+    if (!isValid) {
       throw new Error("Ungültige Anmeldedaten");
+    }
+
+    // Upgrade legacy hashes (sha256_ or mvp_) to PBKDF2 transparently
+    if (!presenter.passwordHash.startsWith("pbkdf2_")) {
+      await ctx.db.patch(presenter._id, {
+        passwordHash: await pbkdf2Hash(args.password),
+      });
     }
 
     const token = generateToken(32);

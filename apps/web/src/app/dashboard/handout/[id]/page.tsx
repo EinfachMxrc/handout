@@ -242,6 +242,13 @@ export default function HandoutEditPage() {
           <button className="btn-secondary text-sm" onClick={openEditHandout}>
             Bearbeiten
           </button>
+          <Link
+            href={`/dashboard/handout/${handoutId}/print`}
+            target="_blank"
+            className="btn-secondary text-sm"
+          >
+            Exportieren
+          </Link>
           <button className="btn-primary text-sm" onClick={handleStartSession}>
             Session starten
           </button>
