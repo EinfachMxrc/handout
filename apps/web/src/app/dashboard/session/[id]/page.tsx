@@ -3,7 +3,7 @@
 import { useQuery, useMutation } from "convex/react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "@convex/_generated/api";
 import { useAuthStore } from "@/store/authStore";
 import { SlideControls } from "@/components/dashboard/SlideControls";
@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/Badge";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Id } from "@convex/_generated/dataModel";
+import { convexClient } from "@/lib/convex";
 
 export default function SessionPage() {
   const params = useParams();
@@ -30,10 +31,38 @@ export default function SessionPage() {
   const triggerBlock = useMutation(api.sessions.triggerBlockManually);
   const unTriggerBlock = useMutation(api.sessions.unTriggerBlockManually);
 
-  const viewerCount = useQuery(
-    api.viewers.getViewerCount,
-    token && data ? { token, sessionId: data.session._id } : "skip"
-  );
+  const [viewerCount, setViewerCount] = useState<number | undefined>(undefined);
+
+  useEffect(() => {
+    if (!token || !data || data.session.status !== "live") {
+      setViewerCount(undefined);
+      return;
+    }
+
+    let isActive = true;
+
+    const fetchViewerCount = async () => {
+      try {
+        const count = await convexClient.query(api.viewers.getViewerCount, {
+          token,
+          sessionId: data.session._id,
+        });
+        if (isActive) setViewerCount(count);
+      } catch {
+        if (isActive) setViewerCount(0);
+      }
+    };
+
+    void fetchViewerCount();
+    const interval = window.setInterval(() => {
+      void fetchViewerCount();
+    }, 10_000);
+
+    return () => {
+      isActive = false;
+      window.clearInterval(interval);
+    };
+  }, [token, data]);
 
   const [isQROpen, setIsQROpen] = useState(false);
   const [activeView, setActiveView] = useState<"control" | "preview">("control");
