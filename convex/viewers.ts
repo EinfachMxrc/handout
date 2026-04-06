@@ -81,20 +81,24 @@ export const getViewerCount = query({
     sessionId: v.id("presentationSessions"),
   },
   handler: async (ctx, args) => {
-    const presenter = await requirePresenter(ctx, args.token);
+    try {
+      const presenter = await requirePresenter(ctx, args.token);
 
-    const session = await ctx.db.get(args.sessionId);
-    if (!session || session.presenterId !== presenter._id) {
-      throw new Error("Nicht autorisiert");
+      const session = await ctx.db.get(args.sessionId);
+      if (!session || session.presenterId !== presenter._id) {
+        return 0;
+      }
+
+      const cutoff = Date.now() - ACTIVE_WINDOW_MS;
+      const heartbeats = await ctx.db
+        .query("viewerHeartbeats")
+        .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
+        .collect();
+
+      return heartbeats.filter((h) => h.lastSeenAt > cutoff).length;
+    } catch {
+      return 0;
     }
-
-    const cutoff = Date.now() - ACTIVE_WINDOW_MS;
-    const heartbeats = await ctx.db
-      .query("viewerHeartbeats")
-      .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
-      .collect();
-
-    return heartbeats.filter((h) => h.lastSeenAt > cutoff).length;
   },
 });
 
