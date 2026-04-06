@@ -58,7 +58,8 @@ export default defineSchema({
     lastSeenAt: v.number(),
   })
     .index("by_session", ["sessionId"])
-    .index("by_session_viewer", ["sessionId", "viewerId"]),
+    .index("by_session_viewer", ["sessionId", "viewerId"])
+    .index("by_lastSeenAt", ["lastSeenAt"]),
 
   // ---- Presentation Sessions ----
   presentationSessions: defineTable({

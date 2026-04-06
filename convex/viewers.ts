@@ -105,13 +105,14 @@ export const cleanupHeartbeats = internalMutation({
   args: {},
   handler: async (ctx) => {
     const cutoff = Date.now() - 24 * 60 * 60_000; // älter als 24h
-    const old = await ctx.db.query("viewerHeartbeats").collect();
+    const old = await ctx.db
+      .query("viewerHeartbeats")
+      .withIndex("by_lastSeenAt", (q) => q.lt("lastSeenAt", cutoff))
+      .collect();
     let deleted = 0;
     for (const h of old) {
-      if (h.lastSeenAt < cutoff) {
-        await ctx.db.delete(h._id);
-        deleted++;
-      }
+      await ctx.db.delete(h._id);
+      deleted++;
     }
     return { deleted };
   },
