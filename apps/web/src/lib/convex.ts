@@ -10,3 +10,5 @@ export const convexClient = new ConvexReactClient(
 );
 
 export const isConvexConfigured = !!convexUrl;
+
+export const CONVEX_MUTATION_TIMEOUT_MS = 30_000;
