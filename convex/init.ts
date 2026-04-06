@@ -7,7 +7,7 @@
  */
 
 import { internalMutation } from "./_generated/server";
-import { generateToken, simpleHash } from "./_utils";
+import { generateToken, sha256Hash } from "./_utils";
 
 export const init = internalMutation({
   args: {},
@@ -23,7 +23,7 @@ export const init = internalMutation({
     if (!existing) {
       presenterId = await ctx.db.insert("presenters", {
         email: "demo@example.com",
-        passwordHash: simpleHash("demo1234"),
+        passwordHash: await sha256Hash("demo1234"),
         name: "Demo Presenter",
         createdAt: Date.now(),
       });

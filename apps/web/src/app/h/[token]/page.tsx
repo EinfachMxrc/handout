@@ -1,11 +1,22 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { api } from "@convex/_generated/api";
+
+/** Stabile Viewer-ID für diese Browser-Session (nicht persistent über Tabs) */
+function getViewerId(): string {
+  const key = "slide-handout-viewer-id";
+  let id = sessionStorage.getItem(key);
+  if (!id) {
+    id = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    sessionStorage.setItem(key, id);
+  }
+  return id;
+}
 
 export default function PublicHandoutPage() {
   const params = useParams();
@@ -13,6 +24,18 @@ export default function PublicHandoutPage() {
 
   const sessionInfo = useQuery(api.sessions.getPublicSession, { publicToken });
   const visibleBlocks = useQuery(api.sessions.getVisibleBlocksForPublic, { publicToken });
+  const pingViewer = useMutation(api.viewers.pingViewer);
+
+  // Viewer-Heartbeat: beim Laden und danach alle 30s
+  useEffect(() => {
+    if (sessionInfo?.status === "ended") return;
+    const viewerId = getViewerId();
+    const ping = () => pingViewer({ publicToken, viewerId }).catch(() => {});
+    ping();
+    const interval = setInterval(ping, 30_000);
+    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [publicToken, sessionInfo?.status, pingViewer]);
 
   // useRef instead of useState to avoid stale-closure bugs in Strict Mode:
   // mutations to prevBlockIds are synchronous and don't trigger extra renders.

@@ -239,14 +239,14 @@ Folie 2 (zurück) → A + B noch sichtbar (highWaterSlide=5) ✓
 
 ## Bekannte Grenzen / TODOs
 
-- [ ] **PowerPoint Fullscreen-Sync:** Im Vollbild-Präsentationsmodus kein zuverlässiger Auto-Sync (Office.js-Limitation) – Workaround: Hybrid/Manuell-Modus
-- [ ] **Auth:** MVP nutzt einfaches Hash-System – für Produktion: Clerk/Auth0/Convex Auth
+- [x] **PowerPoint Fullscreen-Sync:** Direkteingabe der Foliennummer im Add-in als Workaround; Add-in wechselt automatisch in Hybrid/Manuell-Modus (Office.js-Limitation bleibt bestehen)
+- [x] **Auth:** SHA-256 via Web Crypto API; Bestehende Legacy-Hashes werden beim nächsten Login automatisch migriert
 - [x] **Add-in Token-Übergabe:** „Add-in verbinden"-Panel in der Session-Seite – Token, Session-ID und Convex-URL mit einem Klick kopierbar (kein DevTools mehr)
 - [x] **Block-Reihenfolge:** Drag-and-Drop implementiert (⠿ Handle ziehen) + ↑/↓-Buttons bleiben als Fallback
 - [x] **Markdown-Editor:** Vorschau-Tab im Block-Editor hinzugefügt
-- [ ] **Mehrere aktive Sessions:** Derzeit wird immer die neueste gezeigt
-- [ ] **Zuschauer-Count:** Keine Anzeige, wie viele Zuschauer das Handout gerade lesen
-- [ ] **Export:** PDF-Export über Browser-Druck – nativer Export wäre besser
+- [x] **Mehrere aktive Sessions:** Dashboard warnt wenn mehrere Live-Sessions für dasselbe Handout laufen
+- [x] **Zuschauer-Count:** Echtzeit-Anzeige in der Session-Seite via 30s-Heartbeat (`viewerHeartbeats`-Tabelle, stündliche Bereinigung)
+- [x] **Export:** Dedizierte Druckseite `/dashboard/handout/[id]/print` mit allen Blöcken + Reveal-Badges, öffnet Print-Dialog automatisch
 - [x] **Demo-Seeding:** Automatisch beim `pnpm dev:convex` via `--run init:init`
 
 ---

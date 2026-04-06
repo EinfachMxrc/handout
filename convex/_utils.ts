@@ -19,12 +19,24 @@ export function generateToken(length: number = 12): string {
 }
 
 /**
- * Simple hash for MVP auth – NOT for production use.
- * Centralised here so auth.ts and seed.ts always use the same implementation.
- *
- * NOTE: This is a 32-bit integer hash, not bcrypt. It is intentionally
- * lightweight for an MVP and must be replaced with a proper password-hashing
- * library (e.g. bcrypt via a Convex Action) before production deployment.
+ * SHA-256 password hash using the Web Crypto API.
+ * Available in Convex's V8 isolate. Replaces simpleHash for new accounts.
+ * Hash format: "sha256_<hex>"
+ */
+export async function sha256Hash(password: string): Promise<string> {
+  const salted = `slide-handout:${password}`;
+  const data = new TextEncoder().encode(salted);
+  const buffer = await crypto.subtle.digest("SHA-256", data);
+  const hex = Array.from(new Uint8Array(buffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+  return `sha256_${hex}`;
+}
+
+/**
+ * Legacy 32-bit hash (MVP only). Kept for migration: existing accounts
+ * that still have an mvp_-prefixed hash are upgraded to SHA-256 on next login.
+ * Do NOT use for new accounts.
  */
 export function simpleHash(password: string): string {
   let hash = 0;
@@ -32,7 +44,7 @@ export function simpleHash(password: string): string {
   for (let i = 0; i < salted.length; i++) {
     const char = salted.charCodeAt(i);
     hash = (hash << 5) - hash + char;
-    hash = hash & hash; // 32-bit truncation
+    hash = hash & hash;
   }
   return `mvp_${Math.abs(hash).toString(16)}`;
 }

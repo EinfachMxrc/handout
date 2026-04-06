@@ -28,6 +28,11 @@ export default function SessionPage() {
   const triggerBlock = useMutation(api.sessions.triggerBlockManually);
   const unTriggerBlock = useMutation(api.sessions.unTriggerBlockManually);
 
+  const viewerCount = useQuery(
+    api.viewers.getViewerCount,
+    token && data ? { token, sessionId: sessionId as Id<"presentationSessions"> } : "skip"
+  );
+
   const [isQROpen, setIsQROpen] = useState(false);
   const [activeView, setActiveView] = useState<"control" | "preview">("control");
   const [isAddinOpen, setIsAddinOpen] = useState(false);
@@ -88,6 +93,12 @@ export default function SessionPage() {
           <Badge variant={statusColor[session.status] ?? "gray"}>
             {statusLabel[session.status] ?? session.status}
           </Badge>
+          {session.status === "live" && viewerCount !== undefined && (
+            <span className="text-sm text-gray-500 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
+              {viewerCount} {viewerCount === 1 ? "Zuschauer" : "Zuschauer"}
+            </span>
+          )}
         </div>
 
         <div className="flex gap-2">

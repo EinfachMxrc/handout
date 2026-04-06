@@ -158,6 +158,20 @@ export default function DashboardPage() {
       {/* Sessions Tab */}
       {activeTab === "sessions" && (
         <div>
+          {/* Warnung: mehrere Live-Sessions für dasselbe Handout */}
+          {sessions && (() => {
+            const liveCounts: Record<string, number> = {};
+            sessions.forEach((s) => {
+              if (s.status === "live") liveCounts[s.handoutId] = (liveCounts[s.handoutId] ?? 0) + 1;
+            });
+            const conflicts = Object.values(liveCounts).filter((c) => c > 1).length;
+            return conflicts > 0 ? (
+              <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3 text-sm text-yellow-800">
+                ⚠️ Es laufen mehrere Live-Sessions für dasselbe Handout gleichzeitig. Beende nicht mehr benötigte Sessions.
+              </div>
+            ) : null;
+          })()}
+
           {!sessions ? (
             <div className="text-center py-12 text-gray-500">Lädt...</div>
           ) : sessions.length === 0 ? (

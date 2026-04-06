@@ -22,6 +22,7 @@ export function App({ convexReady }: AppProps) {
   const simulatorRef = useRef<SlideSimulator | null>(null);
 
   const [officeMode, setOfficeMode] = useState<"unknown" | SyncCapability>("unknown");
+  const [slideInput, setSlideInput] = useState("");
 
   const setCurrentSlide = useMutation(api.sessions.setCurrentSlide);
 
@@ -164,6 +165,35 @@ export function App({ convexReady }: AppProps) {
                 Weiter →
               </button>
             </div>
+          </div>
+
+          {/* Direkte Foliennummer-Eingabe (hilfreich im Vollbild-Modus) */}
+          <div>
+            <p className="text-xs font-medium text-gray-500 mb-1">Folie direkt eingeben</p>
+            <form
+              className="flex gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const n = parseInt(slideInput, 10);
+                if (!isNaN(n) && n >= 1) {
+                  store.setLastKnownSlide(n);
+                  syncSlide(n);
+                  setSlideInput("");
+                }
+              }}
+            >
+              <input
+                type="number"
+                min={1}
+                value={slideInput}
+                onChange={(e) => setSlideInput(e.target.value)}
+                placeholder="Nr."
+                className="input-sm w-16 text-center"
+              />
+              <button type="submit" className="btn-secondary flex-1 text-xs">
+                Setzen
+              </button>
+            </form>
           </div>
 
           {/* Sync mode explanation */}
