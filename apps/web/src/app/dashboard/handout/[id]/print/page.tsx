@@ -91,7 +91,7 @@ export default function HandoutPrintPage() {
               <div className="flex items-baseline gap-2 mb-2">
                 <span className="text-xs text-gray-400 no-print">#{idx + 1}</span>
                 <h2 className="text-base font-semibold text-gray-900">{block.title}</h2>
-                <span className="no-print text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded px-1.5 py-0.5">
+                <span className="text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded px-1.5 py-0.5">
                   {revealLabel(block.revealRule)}
                 </span>
               </div>

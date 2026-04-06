@@ -10,6 +10,18 @@ import { v } from "convex/values";
 /** Fenster in ms, in dem ein Zuschauer als "aktiv" gilt */
 const ACTIVE_WINDOW_MS = 90_000; // 90 Sekunden
 
+/**
+ * Hash a raw viewerId to a fixed-size fingerprint stored in the DB index.
+ * Prevents unbounded/arbitrary strings from being written into the index.
+ */
+async function fingerprintViewerId(viewerId: string): Promise<string> {
+  const data = new TextEncoder().encode(`vh:${viewerId}`);
+  const buf = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 // ---- AUTH HELPER ----
 async function requirePresenter(ctx: Pick<QueryCtx, "db">, token: string) {
   const session = await ctx.db
@@ -39,10 +51,12 @@ export const pingViewer = mutation({
 
     if (!session || session.status === "ended") return;
 
+    const viewerKey = await fingerprintViewerId(args.viewerId);
+
     const existing = await ctx.db
       .query("viewerHeartbeats")
       .withIndex("by_session_viewer", (q) =>
-        q.eq("sessionId", session._id).eq("viewerId", args.viewerId)
+        q.eq("sessionId", session._id).eq("viewerId", viewerKey)
       )
       .first();
 
@@ -51,7 +65,7 @@ export const pingViewer = mutation({
     } else {
       await ctx.db.insert("viewerHeartbeats", {
         sessionId: session._id,
-        viewerId: args.viewerId,
+        viewerId: viewerKey,
         lastSeenAt: Date.now(),
       });
     }
@@ -67,7 +81,12 @@ export const getViewerCount = query({
     sessionId: v.id("presentationSessions"),
   },
   handler: async (ctx, args) => {
-    await requirePresenter(ctx, args.token);
+    const presenter = await requirePresenter(ctx, args.token);
+
+    const session = await ctx.db.get(args.sessionId);
+    if (!session || session.presenterId !== presenter._id) {
+      throw new Error("Nicht autorisiert");
+    }
 
     const cutoff = Date.now() - ACTIVE_WINDOW_MS;
     const heartbeats = await ctx.db

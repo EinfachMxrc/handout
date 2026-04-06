@@ -28,7 +28,7 @@ export default function PublicHandoutPage() {
 
   // Viewer-Heartbeat: beim Laden und danach alle 30s
   useEffect(() => {
-    if (sessionInfo?.status === "ended") return;
+    if (!sessionInfo || sessionInfo.status === "ended") return;
     const viewerId = getViewerId();
     const ping = () => pingViewer({ publicToken, viewerId }).catch(() => {});
     ping();
