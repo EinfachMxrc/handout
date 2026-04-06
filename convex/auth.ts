@@ -4,11 +4,45 @@
  * Uses a basic hash approach - in production use a proper auth provider.
  */
 
-import { mutation, query } from "./_generated/server";
-import { v } from "convex/values";
-import { generateToken, pbkdf2Hash, verifyPassword } from "./_utils";
+import type { Doc } from "./_generated/dataModel";
+import { mutation, query, type MutationCtx } from "./_generated/server";
+import { ConvexError, v } from "convex/values";
+import {
+  DEMO_PASSWORD,
+  generateToken,
+  isDemoPresenter,
+  sha256v2Hash,
+  verifyPassword,
+} from "./_utils";
 
 const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+async function syncDemoPresenter(
+  ctx: Pick<MutationCtx, "db">,
+  presenter: Doc<"presenters">,
+  password: string
+): Promise<Doc<"presenters">> {
+  if (!isDemoPresenter(presenter)) {
+    return presenter;
+  }
+
+  const updates: Partial<Pick<Doc<"presenters">, "isDemo" | "passwordHash">> = {};
+
+  if (!presenter.isDemo) {
+    updates.isDemo = true;
+  }
+
+  if (password === DEMO_PASSWORD && !presenter.passwordHash.startsWith("sha256v2_")) {
+    updates.passwordHash = await sha256v2Hash(password);
+  }
+
+  if (Object.keys(updates).length === 0) {
+    return presenter;
+  }
+
+  await ctx.db.patch(presenter._id, updates);
+  return { ...presenter, ...updates };
+}
 
 /** Register a new presenter account */
 export const register = mutation({
@@ -24,10 +58,10 @@ export const register = mutation({
       .first();
 
     if (existing) {
-      throw new Error("E-Mail-Adresse bereits registriert");
+      throw new ConvexError("E-Mail-Adresse bereits registriert");
     }
 
-    const passwordHash = await pbkdf2Hash(args.password);
+    const passwordHash = await sha256v2Hash(args.password);
     const presenterId = await ctx.db.insert("presenters", {
       email: args.email,
       passwordHash,
@@ -35,7 +69,6 @@ export const register = mutation({
       createdAt: Date.now(),
     });
 
-    // Auto-login: create session token
     const token = generateToken(32);
     await ctx.db.insert("presenterSessions", {
       presenterId,
@@ -44,7 +77,7 @@ export const register = mutation({
       expiresAt: Date.now() + SESSION_DURATION_MS,
     });
 
-    return { token, presenterId };
+    return { token, presenterId, isDemo: false };
   },
 });
 
@@ -55,26 +88,26 @@ export const login = mutation({
     password: v.string(),
   },
   handler: async (ctx, args) => {
-    const presenter = await ctx.db
+    let presenter = await ctx.db
       .query("presenters")
       .withIndex("by_email", (q) => q.eq("email", args.email))
       .first();
 
     if (!presenter) {
-      throw new Error("Ungültige Anmeldedaten");
+      throw new ConvexError("Ungueltige Anmeldedaten");
     }
 
-    // Verify against stored hash (supports pbkdf2_, sha256_, mvp_ prefixes)
+    presenter = await syncDemoPresenter(ctx, presenter, args.password);
+
     const isValid = await verifyPassword(args.password, presenter.passwordHash);
     if (!isValid) {
-      throw new Error("Ungültige Anmeldedaten");
+      throw new ConvexError("Ungueltige Anmeldedaten");
     }
 
-    // Upgrade legacy hashes (sha256_ or mvp_) to PBKDF2 transparently
-    if (!presenter.passwordHash.startsWith("pbkdf2_")) {
-      await ctx.db.patch(presenter._id, {
-        passwordHash: await pbkdf2Hash(args.password),
-      });
+    if (!presenter.passwordHash.startsWith("sha256v2_")) {
+      const passwordHash = await sha256v2Hash(args.password);
+      await ctx.db.patch(presenter._id, { passwordHash });
+      presenter = { ...presenter, passwordHash };
     }
 
     const token = generateToken(32);
@@ -85,7 +118,13 @@ export const login = mutation({
       expiresAt: Date.now() + SESSION_DURATION_MS,
     });
 
-    return { token, presenterId: presenter._id, name: presenter.name, email: presenter.email };
+    return {
+      token,
+      presenterId: presenter._id,
+      name: presenter.name,
+      email: presenter.email,
+      isDemo: isDemoPresenter(presenter),
+    };
   },
 });
 
@@ -108,6 +147,7 @@ export const validateToken = query({
       presenterId: presenter._id,
       email: presenter.email,
       name: presenter.name,
+      isDemo: isDemoPresenter(presenter),
     };
   },
 });

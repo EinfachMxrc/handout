@@ -38,7 +38,7 @@ export default function RegisterPage() {
         setTimeout(() => reject(new Error("Zeitüberschreitung – bitte erneut versuchen")), CONVEX_MUTATION_TIMEOUT_MS)
       );
       const result = await Promise.race([register({ email, password, name }), timeout]);
-      setAuth(result.token as string, name, email);
+      setAuth(result.token as string, name, email, result.isDemo ?? false);
       router.push("/dashboard");
     } catch (err: any) {
       setError(err.message ?? "Registrierung fehlgeschlagen");

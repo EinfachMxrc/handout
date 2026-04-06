@@ -16,7 +16,7 @@ import type { Id } from "@convex/_generated/dataModel";
 export default function SessionPage() {
   const params = useParams();
   const sessionId = params.id as string;
-  const { token } = useAuthStore();
+  const { token, isDemo } = useAuthStore();
 
   const data = useQuery(
     api.sessions.getPresenterSessionState,
@@ -67,6 +67,11 @@ export default function SessionPage() {
 
   return (
     <div>
+      {isDemo && (
+        <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Demo-Modus: Session-Steuerung, Live-Freischaltungen und Add-in-Verbindung sind fuer den frei zugaenglichen Demo-Account deaktiviert.
+        </div>
+      )}
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
         <Link href="/dashboard" className="hover:text-gray-700">Dashboard</Link>
@@ -106,6 +111,7 @@ export default function SessionPage() {
             <button
               className="btn-primary"
               onClick={() => token && startSession({ token, sessionId: sessionId as Id<"presentationSessions"> })}
+              disabled={isDemo}
             >
               Session starten
             </button>
@@ -118,6 +124,7 @@ export default function SessionPage() {
                 token &&
                 stopSession({ token, sessionId: sessionId as Id<"presentationSessions"> })
               }
+              disabled={isDemo}
             >
               Beenden
             </button>
@@ -175,6 +182,7 @@ export default function SessionPage() {
               currentSlide={session.currentSlide}
               totalSlides={session.totalSlides}
               syncMode={session.syncMode}
+              disabled={isDemo}
             />
           </div>
 
@@ -183,12 +191,17 @@ export default function SessionPage() {
             <button
               className="w-full flex items-center justify-between text-sm font-semibold text-gray-900"
               onClick={() => setIsAddinOpen(!isAddinOpen)}
+              disabled={isDemo}
             >
               <span>Add-in verbinden</span>
               <span className="text-gray-400 text-xs">{isAddinOpen ? "▲ Einklappen" : "▼ Ausklappen"}</span>
             </button>
 
-            {isAddinOpen && (
+            {isDemo ? (
+              <div className="mt-3 text-xs text-gray-500">
+                Im Demo-Modus werden keine Presenter-Tokens fuer das Add-in offengelegt.
+              </div>
+            ) : isAddinOpen && (
               <div className="mt-3 space-y-3">
                 <p className="text-xs text-gray-500">
                   Kopiere diese drei Werte in die Einstellungen des PowerPoint Add-ins.
@@ -269,6 +282,7 @@ export default function SessionPage() {
                             ? unTriggerBlock({ token, sessionId: sessionId as Id<"presentationSessions">, blockId: block._id })
                             : triggerBlock({ token, sessionId: sessionId as Id<"presentationSessions">, blockId: block._id }))
                         }
+                        disabled={isDemo}
                       >
                         {block.isVisible ? "Sperren" : "Freischalten"}
                       </button>

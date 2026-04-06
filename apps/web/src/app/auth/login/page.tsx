@@ -33,7 +33,7 @@ export default function LoginPage() {
         setTimeout(() => reject(new Error("Zeitüberschreitung – bitte erneut versuchen")), CONVEX_MUTATION_TIMEOUT_MS)
       );
       const result = await Promise.race([login({ email, password }), timeout]);
-      setAuth(result.token, result.name ?? undefined, result.email);
+      setAuth(result.token, result.name ?? undefined, result.email, result.isDemo ?? false);
       router.push("/dashboard");
     } catch (err: any) {
       setError(err.message ?? "Anmeldung fehlgeschlagen");
@@ -105,7 +105,7 @@ export default function LoginPage() {
           <div className="mt-4 p-3 bg-blue-50 rounded-lg text-xs text-blue-700">
             <strong>Demo:</strong> demo@example.com / demo1234
             <br />
-            (Seed-Daten zuerst anlegen: siehe README)
+            (schreibgeschuetzt, Seed-Daten zuerst anlegen: siehe README)
           </div>
         </div>
       </div>

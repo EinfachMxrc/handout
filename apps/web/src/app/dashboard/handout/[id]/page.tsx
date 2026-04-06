@@ -36,6 +36,7 @@ interface DraggableBlockProps {
   onDrop: (dragIndex: number, hoverIndex: number) => void;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
+  isReadonly: boolean;
 }
 
 function DraggableBlock({
@@ -47,12 +48,14 @@ function DraggableBlock({
   onDrop,
   onEdit,
   onDelete,
+  isReadonly,
 }: DraggableBlockProps) {
   const ref = useRef<HTMLDivElement>(null);
 
   const [{ isDragging }, drag, dragPreview] = useDrag({
     type: DRAG_TYPE,
     item: { index },
+    canDrag: !isReadonly,
     collect: (monitor) => ({ isDragging: monitor.isDragging() }),
   });
 
@@ -60,6 +63,7 @@ function DraggableBlock({
     accept: DRAG_TYPE,
     collect: (monitor) => ({ isOver: monitor.isOver() }),
     hover(item) {
+      if (isReadonly) return;
       if (item.index === index) return;
       onDrop(item.index, index);
       item.index = index;
@@ -77,7 +81,9 @@ function DraggableBlock({
         {/* Drag handle */}
         <div
           ref={drag as any}
-          className="flex flex-col gap-0.5 flex-shrink-0 mt-2 cursor-grab active:cursor-grabbing touch-none"
+          className={`flex flex-col gap-0.5 flex-shrink-0 mt-2 touch-none ${
+            isReadonly ? "cursor-not-allowed opacity-40" : "cursor-grab active:cursor-grabbing"
+          }`}
           title="Ziehen zum Sortieren"
         >
           <span className="text-gray-300 leading-none select-none">⠿</span>
@@ -88,7 +94,7 @@ function DraggableBlock({
           <button
             className="w-6 h-6 text-gray-400 hover:text-gray-600 flex items-center justify-center disabled:opacity-30"
             onClick={() => onMoveBlock(block._id, "up")}
-            disabled={index === 0}
+            disabled={isReadonly || index === 0}
             title="Nach oben"
           >
             ↑
@@ -96,7 +102,7 @@ function DraggableBlock({
           <button
             className="w-6 h-6 text-gray-400 hover:text-gray-600 flex items-center justify-center disabled:opacity-30"
             onClick={() => onMoveBlock(block._id, "down")}
-            disabled={index === totalBlocks - 1}
+            disabled={isReadonly || index === totalBlocks - 1}
             title="Nach unten"
           >
             ↓
@@ -113,10 +119,10 @@ function DraggableBlock({
         </div>
 
         <div className="flex gap-2 flex-shrink-0">
-          <button className="btn-secondary text-xs" onClick={() => onEdit(block._id)}>
+          <button className="btn-secondary text-xs" onClick={() => onEdit(block._id)} disabled={isReadonly}>
             Bearbeiten
           </button>
-          <button className="btn-danger text-xs" onClick={() => onDelete(block._id)}>
+          <button className="btn-danger text-xs" onClick={() => onDelete(block._id)} disabled={isReadonly}>
             ×
           </button>
         </div>
@@ -128,7 +134,7 @@ function DraggableBlock({
 export default function HandoutEditPage() {
   const params = useParams();
   const handoutId = params.id as string;
-  const { token } = useAuthStore();
+  const { token, isDemo } = useAuthStore();
   const router = useRouter();
 
   const data = useQuery(
@@ -155,7 +161,7 @@ export default function HandoutEditPage() {
 
   const handleSaveHandout = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!token) return;
+    if (!token || isDemo) return;
     await updateHandout({
       token,
       handoutId: handoutId as Id<"handouts">,
@@ -166,13 +172,13 @@ export default function HandoutEditPage() {
   };
 
   const handleStartSession = async () => {
-    if (!token) return;
+    if (!token || isDemo) return;
     const sessionId = await createSession({ token, handoutId: handoutId as Id<"handouts"> });
     router.push(`/dashboard/session/${sessionId}`);
   };
 
   const handleMoveBlock = async (blockId: string, direction: "up" | "down") => {
-    if (!data || !token) return;
+    if (!data || !token || isDemo) return;
     const sorted = [...data.blocks].sort((a, b) => a.order - b.order);
     const idx = sorted.findIndex((b) => b._id === blockId);
     if (direction === "up" && idx === 0) return;
@@ -190,7 +196,7 @@ export default function HandoutEditPage() {
   };
 
   const handleDrop = async (dragIndex: number, hoverIndex: number) => {
-    if (!data || !token) return;
+    if (!data || !token || isDemo) return;
     const sorted = [...data.blocks].sort((a, b) => a.order - b.order);
     const newBlocks = [...sorted];
     const [moved] = newBlocks.splice(dragIndex, 1);
@@ -222,6 +228,11 @@ export default function HandoutEditPage() {
 
   return (
     <div className="max-w-4xl">
+      {isDemo && (
+        <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Dieses Handout ist im Demo-Account nur lesbar. Bearbeiten, Blocks anlegen oder Sessions starten ist fuer alle Demo-Nutzer gesperrt.
+        </div>
+      )}
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
         <Link href="/dashboard" className="hover:text-gray-700">Dashboard</Link>
@@ -239,7 +250,7 @@ export default function HandoutEditPage() {
           <p className="text-sm text-gray-400 mt-1">{blocks.length} Block(s)</p>
         </div>
         <div className="flex gap-2 flex-shrink-0">
-          <button className="btn-secondary text-sm" onClick={openEditHandout}>
+          <button className="btn-secondary text-sm" onClick={openEditHandout} disabled={isDemo}>
             Bearbeiten
           </button>
           <Link
@@ -249,7 +260,7 @@ export default function HandoutEditPage() {
           >
             Exportieren
           </Link>
-          <button className="btn-primary text-sm" onClick={handleStartSession}>
+          <button className="btn-primary text-sm" onClick={handleStartSession} disabled={isDemo}>
             Session starten
           </button>
         </div>
@@ -273,6 +284,7 @@ export default function HandoutEditPage() {
               revealRuleLabel={revealRuleLabel}
               onMoveBlock={handleMoveBlock}
               onDrop={handleDrop}
+              isReadonly={isDemo}
               onEdit={(id) => setEditingBlockId(id)}
               onDelete={(id) => {
                 if (confirm("Block löschen?") && token) {
@@ -287,6 +299,7 @@ export default function HandoutEditPage() {
       <button
         className="btn-secondary w-full"
         onClick={() => setIsCreatingBlock(true)}
+        disabled={isDemo}
       >
         + Block hinzufügen
       </button>
@@ -348,7 +361,7 @@ export default function HandoutEditPage() {
             />
           </div>
           <div className="flex gap-3">
-            <button type="submit" className="btn-primary flex-1">Speichern</button>
+            <button type="submit" className="btn-primary flex-1" disabled={isDemo}>Speichern</button>
             <button type="button" className="btn-secondary" onClick={() => setIsEditingHandout(false)}>
               Abbrechen
             </button>

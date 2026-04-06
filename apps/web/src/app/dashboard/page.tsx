@@ -10,7 +10,7 @@ import { Modal } from "@/components/ui/Modal";
 import type { Id } from "@convex/_generated/dataModel";
 
 export default function DashboardPage() {
-  const { token } = useAuthStore();
+  const { token, isDemo } = useAuthStore();
   const router = useRouter();
 
   const handouts = useQuery(api.handouts.listHandouts, token ? { token } : "skip");
@@ -75,6 +75,7 @@ export default function DashboardPage() {
         <button
           className="btn-primary"
           onClick={() => setIsCreateOpen(true)}
+          disabled={isDemo}
         >
           + Neues Handout
         </button>
@@ -109,7 +110,7 @@ export default function DashboardPage() {
               <p className="text-gray-600 text-sm mb-4">
                 Erstellen Sie Ihr erstes Handout für eine Präsentation.
               </p>
-              <button className="btn-primary" onClick={() => setIsCreateOpen(true)}>
+              <button className="btn-primary" onClick={() => setIsCreateOpen(true)} disabled={isDemo}>
                 Handout erstellen
               </button>
             </div>
@@ -129,16 +130,18 @@ export default function DashboardPage() {
                       className="btn-primary flex-1 text-xs"
                       onClick={() => router.push(`/dashboard/handout/${handout._id}`)}
                     >
-                      Bearbeiten
+                      {isDemo ? "Ansehen" : "Bearbeiten"}
                     </button>
                     <button
                       className="btn-secondary text-xs px-3"
                       onClick={() => handleCreateSession(handout._id)}
+                      disabled={isDemo}
                     >
                       Session
                     </button>
                     <button
                       className="btn-danger text-xs px-3"
+                      disabled={isDemo}
                       onClick={() =>
                         confirm("Handout wirklich löschen?") &&
                         token &&
@@ -216,6 +219,7 @@ export default function DashboardPage() {
                     </a>
                     <button
                       className="btn-danger text-xs px-2"
+                      disabled={isDemo}
                       onClick={() =>
                         confirm("Session löschen?") &&
                         token &&
@@ -261,7 +265,7 @@ export default function DashboardPage() {
             />
           </div>
           <div className="flex gap-3">
-            <button type="submit" className="btn-primary flex-1" disabled={isCreating}>
+            <button type="submit" className="btn-primary flex-1" disabled={isCreating || isDemo}>
               {isCreating ? "Erstellt..." : "Erstellen"}
             </button>
             <button

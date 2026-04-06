@@ -2,10 +2,14 @@
  * Internal utilities for Convex functions.
  */
 
+import { ConvexError } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
 
 export type BlockDoc = Doc<"handoutBlocks">;
 export type SessionDoc = Doc<"presentationSessions">;
+
+export const DEMO_EMAIL = "demo@example.com";
+export const DEMO_PASSWORD = "demo1234";
 
 /**
  * Generate a cryptographically secure random alphanumeric token.
@@ -21,7 +25,7 @@ export function generateToken(length: number = 12): string {
 /**
  * SHA-256 password hash using the Web Crypto API.
  * Kept for verifying legacy accounts created before PBKDF2 migration.
- * Do NOT use for new accounts — use pbkdf2Hash instead.
+ * Do NOT use for new accounts.
  * Hash format: "sha256_<hex>"
  */
 export async function sha256Hash(password: string): Promise<string> {
@@ -35,49 +39,39 @@ export async function sha256Hash(password: string): Promise<string> {
 }
 
 /**
- * PBKDF2-SHA256 password hash with a random per-user salt.
- * Uses Web Crypto API available in Convex's V8 isolate.
- * Hash format: "pbkdf2_<saltHex>_<hashHex>"
+ * SHA-256 password hash with a random per-user salt.
+ * Uses only crypto.subtle.digest which is reliably available in Convex's V8 isolate.
+ * Hash format: "sha256v2_<saltHex>_<hashHex>"
  *
  * @param password  Plaintext password
- * @param saltHex   Optional 32-char hex salt (re-derive for verification); if
- *                  omitted a fresh random 16-byte salt is generated.
+ * @param saltHex   Optional 32-hex-char salt for re-deriving during verification;
+ *                  if omitted a fresh random 16-byte salt is generated.
  */
-export async function pbkdf2Hash(password: string, saltHex?: string): Promise<string> {
+export async function sha256v2Hash(password: string, saltHex?: string): Promise<string> {
   const saltBytes = saltHex
     ? new Uint8Array(saltHex.match(/.{2}/g)!.map((b) => parseInt(b, 16)))
     : crypto.getRandomValues(new Uint8Array(16));
   const saltHexOut = Array.from(saltBytes)
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
-
-  const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(password),
-    "PBKDF2",
-    false,
-    ["deriveBits"]
-  );
-  const bits = await crypto.subtle.deriveBits(
-    { name: "PBKDF2", hash: "SHA-256", salt: saltBytes, iterations: 100_000 },
-    key,
-    256
-  );
-  const hashHex = Array.from(new Uint8Array(bits))
+  const data = new TextEncoder().encode(`slide-handout-v2:${saltHexOut}:${password}`);
+  const buffer = await crypto.subtle.digest("SHA-256", data);
+  const hex = Array.from(new Uint8Array(buffer))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
-  return `pbkdf2_${saltHexOut}_${hashHex}`;
+  return `sha256v2_${saltHexOut}_${hex}`;
 }
 
 /**
- * Verify a password against any stored hash format (pbkdf2_, sha256_, mvp_).
+ * Verify a password against any stored hash format.
+ * Supports sha256v2_ (current), sha256_ (legacy), mvp_ (legacy).
  * Returns true if the password matches.
  */
 export async function verifyPassword(password: string, stored: string): Promise<boolean> {
-  if (stored.startsWith("pbkdf2_")) {
+  if (stored.startsWith("sha256v2_")) {
     const parts = stored.split("_");
     if (parts.length !== 3) return false;
-    const expected = await pbkdf2Hash(password, parts[1]);
+    const expected = await sha256v2Hash(password, parts[1]);
     return expected === stored;
   }
   if (stored.startsWith("sha256_")) {
@@ -87,6 +81,22 @@ export async function verifyPassword(password: string, stored: string): Promise<
     return simpleHash(password) === stored;
   }
   return false;
+}
+
+export function isDemoPresenter(presenter: { isDemo?: boolean; email?: string | undefined }) {
+  return presenter.isDemo === true || presenter.email === DEMO_EMAIL;
+}
+
+/**
+ * Throw if the presenter is the shared demo account.
+ * Call this at the top of every write mutation.
+ */
+export function assertNotDemo(presenter: { isDemo?: boolean; email?: string | undefined }) {
+  if (isDemoPresenter(presenter)) {
+    throw new ConvexError(
+      "Der Demo-Account ist schreibgeschuetzt. Bitte registrieren Sie sich fuer einen eigenen Account."
+    );
+  }
 }
 
 /**
@@ -106,10 +116,7 @@ export function simpleHash(password: string): string {
 }
 
 /** Determine block visibility server-side (mirrors reveal-engine logic). */
-export function isBlockVisible(
-  block: BlockDoc,
-  session: SessionDoc
-): boolean {
+export function isBlockVisible(block: BlockDoc, session: SessionDoc): boolean {
   const rule = block.revealRule;
 
   if (rule.alwaysVisible) return true;
