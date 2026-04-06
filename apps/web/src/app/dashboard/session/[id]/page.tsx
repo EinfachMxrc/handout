@@ -33,31 +33,44 @@ export default function SessionPage() {
   const triggerBlock = useMutation(api.sessions.triggerBlockManually);
   const unTriggerBlock = useMutation(api.sessions.unTriggerBlockManually);
 
-  const [viewerCount, setViewerCount] = useState<number | null>(null);
+  const [viewerCount, setViewerCount] = useState<number>(0);
+  const [isViewerCountLoaded, setIsViewerCountLoaded] = useState(false);
   const activeSessionId = data?.session._id;
   const activeSessionStatus = data?.session.status;
 
   useEffect(() => {
     if (!token || !activeSessionId || activeSessionStatus !== "live") {
-      setViewerCount(null);
+      setViewerCount(0);
+      setIsViewerCountLoaded(false);
       return;
     }
 
     let isActive = true;
+    let isFetching = false;
 
     const fetchViewerCount = async () => {
+      if (isFetching) return;
+      isFetching = true;
       try {
         const count = await convexClient.query(api.viewers.getViewerCount, {
           token,
           sessionId: activeSessionId,
         });
-        if (isActive) setViewerCount(count);
+        if (isActive) {
+          setViewerCount(count);
+          setIsViewerCountLoaded(true);
+        }
       } catch (error) {
         console.error("Failed to fetch viewer count", {
           sessionId: activeSessionId,
           error,
         });
-        if (isActive) setViewerCount(0);
+        if (isActive) {
+          setViewerCount(0);
+          setIsViewerCountLoaded(true);
+        }
+      } finally {
+        isFetching = false;
       }
     };
 
@@ -138,7 +151,7 @@ export default function SessionPage() {
           <Badge variant={statusColor[session.status] ?? "gray"}>
             {statusLabel[session.status] ?? session.status}
           </Badge>
-          {session.status === "live" && viewerCount !== null && (
+          {session.status === "live" && isViewerCountLoaded && (
             <span className="text-sm text-gray-500 flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
               {viewerCount} {viewerCount === 1 ? "Zuschauer" : "Zuschauer"}
