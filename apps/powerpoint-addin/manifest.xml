@@ -14,13 +14,13 @@
   <DisplayName DefaultValue="Slide Handout"/>
   <Description DefaultValue="Live-Handout für Präsentationen – Inhalte schalten sich folienweise frei."/>
 
-  <IconUrl DefaultValue="https://handout.example.com/icon-32.png"/>
-  <HighResolutionIconUrl DefaultValue="https://handout.example.com/icon-64.png"/>
+  <IconUrl DefaultValue="https://localhost:3001/icon-32.png"/>
+  <HighResolutionIconUrl DefaultValue="https://localhost:3001/icon-64.png"/>
 
-  <SupportUrl DefaultValue="https://handout.example.com"/>
+  <SupportUrl DefaultValue="https://localhost:3001"/>
 
   <AppDomains>
-    <AppDomain>handout.example.com</AppDomain>
+    <AppDomain>https://localhost:3001</AppDomain>
   </AppDomains>
 
   <Hosts>
@@ -28,7 +28,7 @@
   </Hosts>
 
   <DefaultSettings>
-    <SourceLocation DefaultValue="https://handout.example.com/"/>
+    <SourceLocation DefaultValue="https://localhost:3001/"/>
   </DefaultSettings>
 
   <Permissions>ReadWriteDocument</Permissions>
@@ -76,13 +76,13 @@
     </Hosts>
     <Resources>
       <bt:Images>
-        <bt:Image id="Icon.16x16" DefaultValue="https://handout.example.com/icon-16.png"/>
-        <bt:Image id="Icon.32x32" DefaultValue="https://handout.example.com/icon-32.png"/>
-        <bt:Image id="Icon.80x80" DefaultValue="https://handout.example.com/icon-80.png"/>
+        <bt:Image id="Icon.16x16" DefaultValue="https://localhost:3001/icon-16.png"/>
+        <bt:Image id="Icon.32x32" DefaultValue="https://localhost:3001/icon-32.png"/>
+        <bt:Image id="Icon.80x80" DefaultValue="https://localhost:3001/icon-80.png"/>
       </bt:Images>
       <bt:Urls>
-        <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://handout.example.com"/>
-        <bt:Url id="Taskpane.Url" DefaultValue="https://handout.example.com/"/>
+        <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://localhost:3001"/>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://localhost:3001/"/>
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GetStarted.Title" DefaultValue="Slide Handout – Bereit!"/>
