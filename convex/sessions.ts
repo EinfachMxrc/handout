@@ -41,6 +41,32 @@ export const listSessions = query({
   },
 });
 
+export const listSessionsWithHandout = query({
+  args: { token: v.string() },
+  handler: async (ctx, args) => {
+    const presenter = await requirePresenter(ctx, args.token);
+    const sessions = await ctx.db
+      .query("presentationSessions")
+      .withIndex("by_presenter", (q) => q.eq("presenterId", presenter._id))
+      .order("desc")
+      .collect();
+
+    const handoutEntries = await Promise.all(
+      sessions.map(async (session) => {
+        const handout = await ctx.db.get(session.handoutId);
+        return [session.handoutId, handout?.title ?? "Unbenanntes Handout"] as const;
+      })
+    );
+
+    const handoutTitles = new Map(handoutEntries);
+
+    return sessions.map((session) => ({
+      ...session,
+      handoutTitle: handoutTitles.get(session.handoutId) ?? "Unbenanntes Handout",
+    }));
+  },
+});
+
 export const getPresenterSessionState = query({
   args: { token: v.string(), sessionId: v.id("presentationSessions") },
   handler: async (ctx, args) => {

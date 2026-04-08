@@ -1,17 +1,17 @@
 "use client";
 
-import { useQuery, useMutation } from "convex/react";
-import { useParams } from "next/navigation";
-import Link from "next/link";
 import { useState } from "react";
-import { api } from "@convex/_generated/api";
-import { useAuthStore } from "@/store/authStore";
-import { SlideControls } from "@/components/dashboard/SlideControls";
-import { QRCodeDialog } from "@/components/dashboard/QRCodeDialog";
-import { Badge } from "@/components/ui/Badge";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { useMutation, useQuery } from "convex/react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Id } from "@convex/_generated/dataModel";
+import { api } from "@convex/_generated/api";
+import { SlideControls } from "@/components/dashboard/SlideControls";
+import { QRCodeDialog } from "@/components/dashboard/QRCodeDialog";
+import { Badge } from "@/components/ui/Badge";
+import { useAuthStore } from "@/store/authStore";
 
 export default function SessionPage() {
   const params = useParams();
@@ -35,30 +35,22 @@ export default function SessionPage() {
 
   const [isQROpen, setIsQROpen] = useState(false);
   const [activeView, setActiveView] = useState<"control" | "preview">("control");
-  const [isAddinOpen, setIsAddinOpen] = useState(false);
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
-
-  const copyToClipboard = (key: string, value: string) => {
-    navigator.clipboard.writeText(value);
-    setCopiedKey(key);
-    setTimeout(() => setCopiedKey(null), 2000);
-  };
 
   if (!data) {
-    return <div className="text-center py-12 text-gray-500">Lädt Session...</div>;
+    return <div className="py-12 text-center text-gray-500">Laedt Session...</div>;
   }
 
   const { session, handout, blocks } = data;
   const publicUrl = `/h/${session.publicToken}`;
-  const fullPublicUrl = typeof window !== "undefined"
-    ? `${window.location.origin}${publicUrl}`
-    : publicUrl;
+  const fullPublicUrl =
+    typeof window !== "undefined" ? `${window.location.origin}${publicUrl}` : publicUrl;
 
   const statusColor: Record<string, "green" | "yellow" | "gray"> = {
     live: "green",
     draft: "yellow",
     ended: "gray",
   };
+
   const statusLabel: Record<string, string> = {
     live: "Live",
     draft: "Entwurf",
@@ -69,12 +61,15 @@ export default function SessionPage() {
     <div>
       {isDemo && (
         <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          Demo-Modus: Session-Steuerung, Live-Freischaltungen und Add-in-Verbindung sind fuer den frei zugaenglichen Demo-Account deaktiviert.
+          Demo-Modus: Session-Steuerung, Live-Freischaltungen und die Add-in-Verbindung
+          bleiben fuer den frei zugaenglichen Demo-Account deaktiviert.
         </div>
       )}
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
-        <Link href="/dashboard" className="hover:text-gray-700">Dashboard</Link>
+
+      <div className="mb-6 flex items-center gap-2 text-sm text-gray-500">
+        <Link href="/dashboard" className="hover:text-gray-700">
+          Dashboard
+        </Link>
         <span>/</span>
         {handout && (
           <>
@@ -90,7 +85,7 @@ export default function SessionPage() {
         <span className="text-gray-900">Session</span>
       </div>
 
-      <div className="flex items-center justify-between mb-6">
+      <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <h1 className="text-xl font-bold text-gray-900">
             {handout?.title ?? "Session"}
@@ -99,9 +94,9 @@ export default function SessionPage() {
             {statusLabel[session.status] ?? session.status}
           </Badge>
           {session.status === "live" && viewerCount !== undefined && (
-            <span className="text-sm text-gray-500 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
-              {viewerCount} {viewerCount === 1 ? "Zuschauer" : "Zuschauer"}
+            <span className="flex items-center gap-1 text-sm text-gray-500">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-green-400" />
+              {viewerCount} Zuschauer
             </span>
           )}
         </div>
@@ -110,7 +105,13 @@ export default function SessionPage() {
           {session.status === "draft" && (
             <button
               className="btn-primary"
-              onClick={() => token && startSession({ token, sessionId: sessionId as Id<"presentationSessions"> })}
+              onClick={() =>
+                token &&
+                startSession({
+                  token,
+                  sessionId: sessionId as Id<"presentationSessions">,
+                })
+              }
               disabled={isDemo}
             >
               Session starten
@@ -122,7 +123,10 @@ export default function SessionPage() {
               onClick={() =>
                 confirm("Session beenden?") &&
                 token &&
-                stopSession({ token, sessionId: sessionId as Id<"presentationSessions"> })
+                stopSession({
+                  token,
+                  sessionId: sessionId as Id<"presentationSessions">,
+                })
               }
               disabled={isDemo}
             >
@@ -138,45 +142,42 @@ export default function SessionPage() {
             rel="noopener noreferrer"
             className="btn-secondary"
           >
-            Handout öffnen ↗
+            Handout oeffnen
           </a>
         </div>
       </div>
 
-      {/* Public URL */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6 flex items-center gap-3">
-        <span className="text-blue-700 text-sm font-medium">Öffentlicher Link:</span>
-        <code className="text-blue-900 text-sm flex-1 truncate">{fullPublicUrl}</code>
+      <div className="mb-6 flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 p-3">
+        <span className="text-sm font-medium text-blue-700">Oeffentlicher Link:</span>
+        <code className="flex-1 truncate text-sm text-blue-900">{fullPublicUrl}</code>
         <button
-          className="text-blue-600 text-sm hover:underline flex-shrink-0"
+          className="flex-shrink-0 text-sm text-blue-600 hover:underline"
           onClick={() => navigator.clipboard.writeText(fullPublicUrl)}
         >
           Kopieren
         </button>
       </div>
 
-      {/* View toggle */}
-      <div className="flex gap-1 mb-4 bg-gray-100 p-1 rounded-lg w-fit">
-        {(["control", "preview"] as const).map((v) => (
+      <div className="mb-4 flex w-fit gap-1 rounded-lg bg-gray-100 p-1">
+        {(["control", "preview"] as const).map((view) => (
           <button
-            key={v}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              activeView === v
+            key={view}
+            className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+              activeView === view
                 ? "bg-white text-gray-900 shadow-sm"
                 : "text-gray-600 hover:text-gray-900"
             }`}
-            onClick={() => setActiveView(v)}
+            onClick={() => setActiveView(view)}
           >
-            {v === "control" ? "Steuerung" : "Vorschau"}
+            {view === "control" ? "Steuerung" : "Vorschau"}
           </button>
         ))}
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Left column: controls */}
+      <div className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-4">
           <div className="card">
-            <h2 className="font-semibold text-gray-900 mb-4">Folien-Steuerung</h2>
+            <h2 className="mb-4 font-semibold text-gray-900">Folien-Steuerung</h2>
             <SlideControls
               sessionId={sessionId}
               currentSlide={session.currentSlide}
@@ -186,92 +187,74 @@ export default function SessionPage() {
             />
           </div>
 
-          {/* Add-in Verbindungsinfo */}
           <div className="card">
-            <button
-              className="w-full flex items-center justify-between text-sm font-semibold text-gray-900"
-              onClick={() => setIsAddinOpen(!isAddinOpen)}
-              disabled={isDemo}
-            >
-              <span>Add-in verbinden</span>
-              <span className="text-gray-400 text-xs">{isAddinOpen ? "▲ Einklappen" : "▼ Ausklappen"}</span>
-            </button>
-
             {isDemo ? (
-              <div className="mt-3 text-xs text-gray-500">
-                Im Demo-Modus werden keine Presenter-Tokens fuer das Add-in offengelegt.
+              <div className="text-sm text-gray-500">
+                Im Demo-Modus bleibt die Presenter-Steuerung im PowerPoint Add-in deaktiviert.
               </div>
-            ) : isAddinOpen && (
-              <div className="mt-3 space-y-3">
-                <p className="text-xs text-gray-500">
-                  Kopiere diese drei Werte in die Einstellungen des PowerPoint Add-ins.
-                </p>
-                {[
-                  {
-                    key: "url",
-                    label: "Convex URL",
-                    value: process.env.NEXT_PUBLIC_CONVEX_URL ?? "(nicht gesetzt – pnpm setup ausführen)",
-                    mono: true,
-                  },
-                  {
-                    key: "token",
-                    label: "Presenter-Token",
-                    value: token ?? "",
-                    mono: true,
-                    secret: true,
-                  },
-                  {
-                    key: "session",
-                    label: "Session-ID",
-                    value: sessionId,
-                    mono: true,
-                  },
-                ].map(({ key, label, value, mono, secret }) => (
-                  <div key={key}>
-                    <div className="text-xs font-medium text-gray-600 mb-1">{label}</div>
-                    <div className="flex items-center gap-2">
-                      <code className={`flex-1 text-xs bg-gray-50 border border-gray-200 rounded px-2 py-1.5 truncate ${mono ? "font-mono" : ""}`}>
-                        {secret ? `${value.slice(0, 8)}${"•".repeat(Math.max(0, value.length - 8))}` : value}
-                      </code>
-                      <button
-                        className="text-xs px-2 py-1.5 rounded border border-gray-200 hover:bg-gray-100 flex-shrink-0 transition-colors"
-                        onClick={() => copyToClipboard(key, value)}
-                      >
-                        {copiedKey === key ? "✓" : "Kopieren"}
-                      </button>
-                    </div>
-                  </div>
-                ))}
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <h2 className="font-semibold text-gray-900">PowerPoint Add-in</h2>
+                  <p className="mt-2 text-sm text-gray-600">
+                    Das Add-in wird jetzt ueber Ihre Vercel-Domain ausgeliefert.
+                    Nach der Installation melden Sie sich direkt im Taskpane mit
+                    Ihrem normalen Account an und waehlen dort diese Session aus.
+                  </p>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <a href="/powerpoint" className="btn-primary justify-center">
+                    Install-Seite oeffnen
+                  </a>
+                  <a href="/powerpoint/manifest" className="btn-secondary justify-center">
+                    Manifest herunterladen
+                  </a>
+                </div>
+
+                <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
+                  Schnellweg:{" "}
+                  <span className="font-medium text-gray-900">
+                    PowerPoint &gt; Einfuegen &gt; Add-Ins &gt; Eigene Add-Ins &gt; Add-In hochladen
+                  </span>
+                  <span className="mt-1 block">
+                    Danach das Taskpane oeffnen, einloggen und die gewuenschte Session auswaehlen.
+                  </span>
+                </div>
               </div>
             )}
           </div>
 
-          {/* Block visibility list */}
           <div className="card">
-            <h2 className="font-semibold text-gray-900 mb-3">Blöcke</h2>
+            <h2 className="mb-3 font-semibold text-gray-900">Bloecke</h2>
             <div className="space-y-2">
               {blocks.map((block) => (
                 <div
                   key={block._id}
-                  className={`flex items-center justify-between p-2 rounded-lg border ${
+                  className={`flex items-center justify-between rounded-lg border p-2 ${
                     block.isVisible
                       ? "border-green-200 bg-green-50"
                       : "border-gray-200 bg-gray-50"
                   }`}
                 >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${block.isVisible ? "bg-green-500" : "bg-gray-300"}`} />
-                    <span className="text-sm text-gray-900 truncate">{block.title}</span>
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span
+                      className={`h-2 w-2 flex-shrink-0 rounded-full ${
+                        block.isVisible ? "bg-green-500" : "bg-gray-300"
+                      }`}
+                    />
+                    <span className="truncate text-sm text-gray-900">{block.title}</span>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="flex flex-shrink-0 items-center gap-2">
                     {!block.isVisible && (
                       <span className="text-xs text-gray-500">
-                        Ab Folie {block.revealRule.alwaysVisible ? "–" : block.revealRule.revealSlide}
+                        Ab Folie{" "}
+                        {block.revealRule.alwaysVisible ? "-" : block.revealRule.revealSlide}
                       </span>
                     )}
                     {block.revealRule.manuallyTriggered && (
                       <button
-                        className={`text-xs px-2 py-1 rounded ${
+                        className={`rounded px-2 py-1 text-xs ${
                           block.isVisible
                             ? "bg-red-100 text-red-700 hover:bg-red-200"
                             : "bg-blue-100 text-blue-700 hover:bg-blue-200"
@@ -279,8 +262,16 @@ export default function SessionPage() {
                         onClick={() =>
                           token &&
                           (block.isVisible
-                            ? unTriggerBlock({ token, sessionId: sessionId as Id<"presentationSessions">, blockId: block._id })
-                            : triggerBlock({ token, sessionId: sessionId as Id<"presentationSessions">, blockId: block._id }))
+                            ? unTriggerBlock({
+                                token,
+                                sessionId: sessionId as Id<"presentationSessions">,
+                                blockId: block._id,
+                              })
+                            : triggerBlock({
+                                token,
+                                sessionId: sessionId as Id<"presentationSessions">,
+                                blockId: block._id,
+                              }))
                         }
                         disabled={isDemo}
                       >
@@ -294,27 +285,26 @@ export default function SessionPage() {
           </div>
         </div>
 
-        {/* Right column: live preview */}
         {activeView === "preview" && (
           <div className="card">
-            <h2 className="font-semibold text-gray-900 mb-4">
+            <h2 className="mb-4 font-semibold text-gray-900">
               Live-Vorschau
-              <span className="text-xs font-normal text-gray-500 ml-2">
+              <span className="ml-2 text-xs font-normal text-gray-500">
                 (wie Zuschauer sehen)
               </span>
             </h2>
-            <div className="space-y-4 max-h-[500px] overflow-y-auto">
-              {blocks.filter((b) => b.isVisible).length === 0 && (
-                <p className="text-sm text-gray-500 text-center py-4">
+            <div className="max-h-[500px] space-y-4 overflow-y-auto">
+              {blocks.filter((block) => block.isVisible).length === 0 && (
+                <p className="py-4 text-center text-sm text-gray-500">
                   Noch keine Inhalte freigeschaltet.
                 </p>
               )}
               {blocks
-                .filter((b) => b.isVisible)
+                .filter((block) => block.isVisible)
                 .map((block) => (
-                  <div key={block._id} className="border border-gray-200 rounded-lg p-4">
-                    <h3 className="font-semibold text-gray-900 mb-2">{block.title}</h3>
-                    <div className="prose prose-sm max-w-none markdown-content">
+                  <div key={block._id} className="rounded-lg border border-gray-200 p-4">
+                    <h3 className="mb-2 font-semibold text-gray-900">{block.title}</h3>
+                    <div className="markdown-content prose prose-sm max-w-none">
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
                         {block.content}
                       </ReactMarkdown>
