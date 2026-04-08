@@ -18,8 +18,10 @@ let isInitialized = false;
 let activeCallbacks: OfficeBridgeCallbacks | null = null;
 let lastReportedSlide: number | null = null;
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+let pollTimer: ReturnType<typeof setInterval> | null = null;
 
 const DEBOUNCE_MS = 250;
+const POLL_MS = 1000;
 
 export function isOfficeAvailable(): boolean {
   return typeof Office !== "undefined" && typeof Office.context !== "undefined";
@@ -44,6 +46,8 @@ export function initOfficeBridge(
       }
 
       isInitialized = true;
+      void syncCurrentSlide();
+      startPolling();
 
       try {
         Office.context.document.addHandlerAsync(
@@ -60,6 +64,14 @@ export function initOfficeBridge(
             }
 
             callbacks.onModeChange("auto");
+            try {
+              Office.context.document.addHandlerAsync(
+                Office.EventType.ActiveViewChanged,
+                handleActiveViewChanged
+              );
+            } catch {
+              // Ignore optional view change registration failures.
+            }
             resolve("auto");
           }
         );
@@ -80,21 +92,38 @@ function handleSelectionChanged() {
   }
 
   debounceTimer = setTimeout(() => {
-    void getCurrentSlideInfo()
-      .then((info) => {
-        if (!info || !activeCallbacks) {
-          return;
-        }
-
-        if (info.slideNumber !== lastReportedSlide) {
-          lastReportedSlide = info.slideNumber;
-          activeCallbacks.onSlideChange(info);
-        }
-      })
-      .catch((error) => {
-        activeCallbacks?.onError(`Folien-Update fehlgeschlagen: ${String(error)}`);
-      });
+    void syncCurrentSlide();
   }, DEBOUNCE_MS);
+}
+
+function handleActiveViewChanged() {
+  handleSelectionChanged();
+}
+
+async function syncCurrentSlide() {
+  try {
+    const info = await getCurrentSlideInfo();
+    if (!info || !activeCallbacks) {
+      return;
+    }
+
+    if (info.slideNumber !== lastReportedSlide) {
+      lastReportedSlide = info.slideNumber;
+      activeCallbacks.onSlideChange(info);
+    }
+  } catch (error) {
+    activeCallbacks?.onError(`Folien-Update fehlgeschlagen: ${String(error)}`);
+  }
+}
+
+function startPolling() {
+  if (pollTimer) {
+    clearInterval(pollTimer);
+  }
+
+  pollTimer = setInterval(() => {
+    void syncCurrentSlide();
+  }, POLL_MS);
 }
 
 export function getCurrentSlideInfo(): Promise<OfficeSlideInfo | null> {
@@ -126,7 +155,7 @@ export function getCurrentSlideInfo(): Promise<OfficeSlideInfo | null> {
             return;
           }
 
-          const slideNumber = slides[0].index + 1;
+          const slideNumber = slides[0].index;
 
           (Office.context.document as any).getSlideCountAsync(
             (countResult: { status: string; value: number }) => {
@@ -152,6 +181,11 @@ export function destroyOfficeBridge() {
     debounceTimer = null;
   }
 
+  if (pollTimer) {
+    clearInterval(pollTimer);
+    pollTimer = null;
+  }
+
   if (!isInitialized || !isOfficeAvailable()) {
     activeCallbacks = null;
     lastReportedSlide = null;
@@ -162,6 +196,10 @@ export function destroyOfficeBridge() {
     Office.context.document.removeHandlerAsync(
       Office.EventType.DocumentSelectionChanged,
       { handler: handleSelectionChanged }
+    );
+    Office.context.document.removeHandlerAsync(
+      Office.EventType.ActiveViewChanged,
+      { handler: handleActiveViewChanged }
     );
   } catch {
     // Ignore cleanup failures when Office already disposed the taskpane.
