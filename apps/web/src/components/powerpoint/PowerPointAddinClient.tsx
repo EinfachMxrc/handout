@@ -18,7 +18,6 @@ type SessionOption = {
   _id: Id<"presentationSessions">;
   currentSlide: number;
   createdAt: number;
-  handoutTitle: string;
   publicToken: string;
   status: "draft" | "live" | "ended";
   totalSlides?: number;
@@ -144,7 +143,7 @@ export function PowerPointAddinClient() {
   const presenter = useQuery(api.auth.validateToken, token ? { token } : "skip");
   const hasValidatedPresenter = presenter !== undefined && presenter !== null;
   const sessions = useQuery(
-    api.sessions.listSessionsWithHandout,
+    api.sessions.listSessions,
     token && hasValidatedPresenter ? { token } : "skip"
   ) as SessionOption[] | undefined;
   const sessionData = useQuery(
@@ -209,7 +208,7 @@ export function PowerPointAddinClient() {
     () =>
       (sessions ?? []).map((session) => ({
         ...session,
-        label: `${session.handoutTitle} - ${statusLabel[session.status]} - ${new Date(
+        label: `Session - ${statusLabel[session.status]} - ${new Date(
           session.createdAt
         ).toLocaleDateString("de-DE")}`,
       })),
