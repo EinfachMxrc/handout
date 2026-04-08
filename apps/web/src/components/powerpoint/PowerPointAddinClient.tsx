@@ -142,13 +142,14 @@ export function PowerPointAddinClient() {
   }, [hydrated, token, presenterEmail, presenterName, selectedSessionId]);
 
   const presenter = useQuery(api.auth.validateToken, token ? { token } : "skip");
+  const hasValidatedPresenter = presenter !== undefined && presenter !== null;
   const sessions = useQuery(
     api.sessions.listSessionsWithHandout,
-    token ? { token } : "skip"
+    token && hasValidatedPresenter ? { token } : "skip"
   ) as SessionOption[] | undefined;
   const sessionData = useQuery(
     api.sessions.getPresenterSessionState,
-    token && selectedSessionId
+    token && hasValidatedPresenter && selectedSessionId
       ? {
           token,
           sessionId: selectedSessionId as Id<"presentationSessions">,

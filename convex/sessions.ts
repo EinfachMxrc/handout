@@ -5,7 +5,7 @@
 
 import { mutation, query } from "./_generated/server";
 import type { QueryCtx } from "./_generated/server";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { generateToken, isBlockVisible, assertNotDemo } from "./_utils";
 
 // ---- AUTH HELPER ----
@@ -16,11 +16,11 @@ async function requirePresenter(ctx: Pick<QueryCtx, "db">, token: string) {
     .first();
 
   if (!session || session.expiresAt < Date.now()) {
-    throw new Error("Nicht autorisiert");
+    throw new ConvexError("Nicht autorisiert");
   }
 
   const presenter = await ctx.db.get(session.presenterId);
-  if (!presenter) throw new Error("Nicht autorisiert");
+  if (!presenter) throw new ConvexError("Nicht autorisiert");
 
   return presenter;
 }

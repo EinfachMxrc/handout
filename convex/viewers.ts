@@ -5,7 +5,7 @@
 
 import { internalMutation, mutation, query } from "./_generated/server";
 import type { QueryCtx } from "./_generated/server";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 
 /** Fenster in ms, in dem ein Zuschauer als "aktiv" gilt */
 const ACTIVE_WINDOW_MS = 90_000; // 90 Sekunden
@@ -28,9 +28,11 @@ async function requirePresenter(ctx: Pick<QueryCtx, "db">, token: string) {
     .query("presenterSessions")
     .withIndex("by_token", (q) => q.eq("token", token))
     .first();
-  if (!session || session.expiresAt < Date.now()) throw new Error("Nicht autorisiert");
+  if (!session || session.expiresAt < Date.now()) {
+    throw new ConvexError("Nicht autorisiert");
+  }
   const presenter = await ctx.db.get(session.presenterId);
-  if (!presenter) throw new Error("Nicht autorisiert");
+  if (!presenter) throw new ConvexError("Nicht autorisiert");
   return presenter;
 }
 
