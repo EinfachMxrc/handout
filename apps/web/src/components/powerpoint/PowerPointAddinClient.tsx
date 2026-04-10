@@ -8,7 +8,6 @@ import { api } from "@convex/_generated/api";
 import {
   destroyOfficeBridge,
   initOfficeBridge,
-  isOfficeAvailable,
   type SyncCapability,
 } from "@/lib/powerpoint/officeBridge";
 
@@ -245,11 +244,15 @@ export function PowerPointAddinClient() {
   };
 
   useEffect(() => {
-    const officeAvailable = isOfficeAvailable();
-    setOfficeDetected(officeAvailable);
     setSyncStatus("manual_only");
 
-    if (!officeAvailable || !token || !selectedSessionId || isDemo) {
+    // Only check whether the Office script was loaded at all (typeof Office).
+    // Office.context may not be set up yet at this point — initOfficeBridge
+    // uses Office.onReady() internally which waits for full initialization.
+    const officeScriptPresent = typeof Office !== "undefined";
+
+    if (!officeScriptPresent || !token || !selectedSessionId || isDemo) {
+      setOfficeDetected(false);
       return;
     }
 
@@ -257,36 +260,24 @@ export function PowerPointAddinClient() {
 
     void initOfficeBridge({
       onSlideChange: (info) => {
-        if (!active) {
-          return;
-        }
-
+        if (!active) return;
         setBridgeSlide(info.slideNumber);
-        void syncSlide(
-          info.slideNumber,
-          info.totalSlides,
-          info.presentationTitle
-        );
+        void syncSlide(info.slideNumber, info.totalSlides, info.presentationTitle);
       },
       onModeChange: (mode) => {
-        if (!active) {
-          return;
-        }
-
+        if (!active) return;
         setSyncStatus(mode);
       },
       onError: (message) => {
-        if (!active) {
-          return;
-        }
-
+        if (!active) return;
         setActionError(message);
         setSyncStatus("hybrid");
       },
     }).then((mode) => {
-      if (active) {
-        setSyncStatus(mode);
-      }
+      if (!active) return;
+      setSyncStatus(mode);
+      // officeDetected = true only if Office.onReady confirmed we are in PowerPoint
+      setOfficeDetected(mode !== "manual_only");
     });
 
     return () => {
