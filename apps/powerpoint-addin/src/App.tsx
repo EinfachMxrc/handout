@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useMutation, useQuery } from "convex/react";
+import type { Id } from "../../../convex/_generated/dataModel";
 import { useAddinStore } from "./store/addinStore";
 import {
   initOfficeBridge,
@@ -73,7 +74,7 @@ export function App({ convexReady }: AppProps) {
     try {
       await setCurrentSlide({
         token: store.presenterToken,
-        sessionId: store.sessionId,
+        sessionId: store.sessionId as Id<"presentationSessions">,
         slideNumber,
         totalSlides,
         presentationTitle: title,

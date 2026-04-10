@@ -155,7 +155,7 @@ export function getCurrentSlideInfo(): Promise<OfficeSlideInfo | null> {
             return;
           }
 
-          const slideNumber = slides[0].index;
+          const slideNumber = slides[0].index + 1;
 
           (Office.context.document as any).getSlideCountAsync(
             (countResult: { status: string; value: number }) => {
