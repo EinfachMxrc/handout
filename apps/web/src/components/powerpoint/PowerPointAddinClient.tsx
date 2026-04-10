@@ -249,7 +249,7 @@ export function PowerPointAddinClient() {
     // Only check whether the Office script was loaded at all (typeof Office).
     // Office.context may not be set up yet at this point — initOfficeBridge
     // uses Office.onReady() internally which waits for full initialization.
-    const officeScriptPresent = typeof Office !== "undefined";
+    const officeScriptPresent = typeof (globalThis as any).Office !== "undefined";
 
     if (!officeScriptPresent || !token || !selectedSessionId || isDemo) {
       setOfficeDetected(false);
