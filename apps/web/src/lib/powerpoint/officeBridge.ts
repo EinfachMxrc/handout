@@ -157,16 +157,20 @@ export function getCurrentSlideInfo(): Promise<OfficeSlideInfo | null> {
 
           const slideNumber = slides[0].index + 1;
 
-          (Office.context.document as any).getSlideCountAsync(
-            (countResult: { status: string; value: number }) => {
-              const totalSlides =
-                countResult.status === Office.AsyncResultStatus.Succeeded
-                  ? countResult.value
-                  : slideNumber;
+          try {
+            (Office.context.document as any).getSlideCountAsync(
+              (countResult: { status: string; value: number }) => {
+                const totalSlides =
+                  countResult.status === Office.AsyncResultStatus.Succeeded
+                    ? countResult.value
+                    : slideNumber;
 
-              resolve({ slideNumber, totalSlides, presentationTitle });
-            }
-          );
+                resolve({ slideNumber, totalSlides, presentationTitle });
+              }
+            );
+          } catch {
+            resolve({ slideNumber, totalSlides: slideNumber, presentationTitle });
+          }
         }
       );
     } catch {
