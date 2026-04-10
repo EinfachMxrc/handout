@@ -104,7 +104,7 @@ export function PowerPointAddinClient() {
   const [loginError, setLoginError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<SyncCapability>("manual_only");
-  const [lastKnownSlide, setLastKnownSlide] = useState(1);
+  const [bridgeSlide, setBridgeSlide] = useState<number | null>(null);
   const [slideInput, setSlideInput] = useState("");
   const [isSyncing, setIsSyncing] = useState(false);
   const [officeDetected, setOfficeDetected] = useState(false);
@@ -196,13 +196,15 @@ export function PowerPointAddinClient() {
     setSelectedSessionId(preferredSession?._id ?? "");
   }, [sessions, selectedSessionId]);
 
+  // Reset bridge slide when switching sessions so the DB value shows until
+  // the bridge detects the current slide again.
   useEffect(() => {
-    if (!sessionData) {
-      return;
-    }
+    setBridgeSlide(null);
+  }, [selectedSessionId]);
 
-    setLastKnownSlide(sessionData.session.currentSlide);
-  }, [sessionData]);
+  // Bridge slide takes priority over DB value to avoid overwriting a detected
+  // slide change before the Convex mutation completes.
+  const lastKnownSlide = bridgeSlide ?? sessionData?.session.currentSlide ?? 1;
 
   const sessionOptions = useMemo(
     () =>
@@ -259,7 +261,7 @@ export function PowerPointAddinClient() {
           return;
         }
 
-        setLastKnownSlide(info.slideNumber);
+        setBridgeSlide(info.slideNumber);
         void syncSlide(
           info.slideNumber,
           info.totalSlides,
@@ -295,7 +297,7 @@ export function PowerPointAddinClient() {
 
   const handleManualSlide = async (nextSlide: number) => {
     const normalizedSlide = Math.max(1, nextSlide);
-    setLastKnownSlide(normalizedSlide);
+    setBridgeSlide(normalizedSlide);
     await syncSlide(
       normalizedSlide,
       sessionData?.session.totalSlides,
