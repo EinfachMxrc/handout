@@ -14,14 +14,14 @@
   <DisplayName DefaultValue="Slide Handout"/>
   <Description DefaultValue="Live-Handout für Präsentationen – Inhalte schalten sich folienweise frei."/>
 
-  <IconUrl DefaultValue="https://handoutmarc.netlify.app/icon-32.png"/>
-  <HighResolutionIconUrl DefaultValue="https://handoutmarc.netlify.app/icon-64.png"/>
+  <IconUrl DefaultValue="https://handout-powerpoint-addin.vercel.app/icon-32.png"/>
+  <HighResolutionIconUrl DefaultValue="https://handout-powerpoint-addin.vercel.app/icon-64.png"/>
 
-  <SupportUrl DefaultValue="https://handoutmarc.netlify.app"/>
+  <SupportUrl DefaultValue="https://handout-powerpoint-addin.vercel.app"/>
 
   <AppDomains>
     <AppDomain>localhost</AppDomain>
-    <AppDomain>handoutmarc.netlify.app</AppDomain>
+    <AppDomain>handout-powerpoint-addin.vercel.app</AppDomain>
   </AppDomains>
 
   <Hosts>
@@ -29,7 +29,7 @@
   </Hosts>
 
   <DefaultSettings>
-    <SourceLocation DefaultValue="https://handoutmarc.netlify.app/"/>
+    <SourceLocation DefaultValue="https://handout-powerpoint-addin.vercel.app/"/>
   </DefaultSettings>
 
   <Permissions>ReadWriteDocument</Permissions>
@@ -77,13 +77,13 @@
     </Hosts>
     <Resources>
       <bt:Images>
-        <bt:Image id="Icon.16x16" DefaultValue="https://handoutmarc.netlify.app/icon-16.png"/>
-        <bt:Image id="Icon.32x32" DefaultValue="https://handoutmarc.netlify.app/icon-32.png"/>
-        <bt:Image id="Icon.80x80" DefaultValue="https://handoutmarc.netlify.app/icon-80.png"/>
+        <bt:Image id="Icon.16x16" DefaultValue="https://handout-powerpoint-addin.vercel.app/icon-16.png"/>
+        <bt:Image id="Icon.32x32" DefaultValue="https://handout-powerpoint-addin.vercel.app/icon-32.png"/>
+        <bt:Image id="Icon.80x80" DefaultValue="https://handout-powerpoint-addin.vercel.app/icon-80.png"/>
       </bt:Images>
       <bt:Urls>
-        <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://handoutmarc.netlify.app"/>
-        <bt:Url id="Taskpane.Url" DefaultValue="https://handoutmarc.netlify.app/"/>
+        <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://handout-powerpoint-addin.vercel.app"/>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://handout-powerpoint-addin.vercel.app/"/>
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GetStarted.Title" DefaultValue="Slide Handout – Bereit!"/>
