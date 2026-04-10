@@ -40,7 +40,9 @@ let _lastReportedSlide: number | null = null;
 
 /** Debounce timer for DocumentSelectionChanged */
 let _debounceTimer: ReturnType<typeof setTimeout> | null = null;
+let _pollTimer: ReturnType<typeof setInterval> | null = null;
 const DEBOUNCE_MS = 250;
+const POLL_MS = 1000;
 
 /**
  * Returns true if Office.js is available in this environment.
@@ -70,6 +72,8 @@ export function initOfficeBridge(callbacks: OfficeBridgeCallbacks): Promise<Sync
       }
 
       isOfficeInitialized = true;
+      void syncCurrentSlide();
+      startPolling();
 
       try {
         Office.context.document.addHandlerAsync(
@@ -78,14 +82,25 @@ export function initOfficeBridge(callbacks: OfficeBridgeCallbacks): Promise<Sync
           (result) => {
             if (result.status === Office.AsyncResultStatus.Failed) {
               callbacks.onError("Automatischer Sync nicht verfügbar. Manueller Modus aktiv.");
+              callbacks.onModeChange("hybrid");
               resolve("hybrid");
             } else {
+              callbacks.onModeChange("auto");
+              try {
+                Office.context.document.addHandlerAsync(
+                  Office.EventType.ActiveViewChanged,
+                  handleActiveViewChanged
+                );
+              } catch {
+                // Ignore optional view change registration failures.
+              }
               resolve("auto");
             }
           }
         );
       } catch {
         callbacks.onError("Slide-Erkennung nicht verfügbar. Manueller Modus aktiv.");
+        callbacks.onModeChange("hybrid");
         resolve("hybrid");
       }
     });
@@ -101,19 +116,36 @@ export function initOfficeBridge(callbacks: OfficeBridgeCallbacks): Promise<Sync
 function handleSelectionChanged() {
   if (_debounceTimer) clearTimeout(_debounceTimer);
   _debounceTimer = setTimeout(() => {
-    getCurrentSlideInfo()
-      .then((info) => {
-        if (!info || !_callbacks) return;
-        // Only fire if slide actually changed
-        if (info.slideNumber !== _lastReportedSlide) {
-          _lastReportedSlide = info.slideNumber;
-          _callbacks.onSlideChange(info);
-        }
-      })
-      .catch((e) => {
-        _callbacks?.onError(`Folien-Update fehlgeschlagen: ${e}`);
-      });
+    void syncCurrentSlide();
   }, DEBOUNCE_MS);
+}
+
+function handleActiveViewChanged() {
+  handleSelectionChanged();
+}
+
+async function syncCurrentSlide() {
+  try {
+    const info = await getCurrentSlideInfo();
+    if (!info || !_callbacks) return;
+
+    if (info.slideNumber !== _lastReportedSlide) {
+      _lastReportedSlide = info.slideNumber;
+      _callbacks.onSlideChange(info);
+    }
+  } catch (e) {
+    _callbacks?.onError(`Folien-Update fehlgeschlagen: ${e}`);
+  }
+}
+
+function startPolling() {
+  if (_pollTimer) {
+    clearInterval(_pollTimer);
+  }
+
+  _pollTimer = setInterval(() => {
+    void syncCurrentSlide();
+  }, POLL_MS);
 }
 
 /**
@@ -181,11 +213,19 @@ export function destroyOfficeBridge() {
     clearTimeout(_debounceTimer);
     _debounceTimer = null;
   }
+  if (_pollTimer) {
+    clearInterval(_pollTimer);
+    _pollTimer = null;
+  }
   if (!isOfficeInitialized || !isOfficeAvailable()) return;
   try {
     Office.context.document.removeHandlerAsync(
       Office.EventType.DocumentSelectionChanged,
       { handler: handleSelectionChanged }
+    );
+    Office.context.document.removeHandlerAsync(
+      Office.EventType.ActiveViewChanged,
+      { handler: handleActiveViewChanged }
     );
   } catch {
     // ignore
