@@ -17,11 +17,11 @@ export interface OfficeBridgeCallbacks {
 let isInitialized = false;
 let activeCallbacks: OfficeBridgeCallbacks | null = null;
 let lastReportedSlide: number | null = null;
-let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 let pollTimer: ReturnType<typeof setInterval> | null = null;
+let windowBlurListener: (() => void) | null = null;
+let windowFocusListener: (() => void) | null = null;
 
-const DEBOUNCE_MS = 150;
-const POLL_MS = 800;
+const POLL_MS = 500;
 
 export function isOfficeAvailable(): boolean {
   return typeof Office !== "undefined" && typeof Office.context !== "undefined";
@@ -29,7 +29,6 @@ export function isOfficeAvailable(): boolean {
 
 function isPowerPointApiAvailable(): boolean {
   return (
-    isOfficeAvailable() &&
     typeof (globalThis as any).PowerPoint !== "undefined" &&
     typeof (globalThis as any).PowerPoint.run === "function"
   );
@@ -41,7 +40,7 @@ export function initOfficeBridge(
   activeCallbacks = callbacks;
 
   return new Promise((resolve) => {
-    if (!isOfficeAvailable()) {
+    if (typeof Office === "undefined") {
       resolve("manual_only");
       return;
     }
@@ -54,8 +53,10 @@ export function initOfficeBridge(
       }
 
       isInitialized = true;
+
       void syncCurrentSlide();
       startPolling();
+      setupWindowListeners();
 
       try {
         Office.context.document.addHandlerAsync(
@@ -63,30 +64,23 @@ export function initOfficeBridge(
           handleSelectionChanged,
           (result: { status: string }) => {
             if (result.status === Office.AsyncResultStatus.Failed) {
-              callbacks.onError(
-                "Automatischer Sync ist hier nicht verfuegbar. Manueller Modus aktiv."
-              );
               callbacks.onModeChange("hybrid");
               resolve("hybrid");
               return;
             }
-
             callbacks.onModeChange("auto");
             try {
               Office.context.document.addHandlerAsync(
                 Office.EventType.ActiveViewChanged,
-                handleActiveViewChanged
+                handleSelectionChanged
               );
             } catch {
-              // Ignore optional view change registration failures.
+              // optional
             }
             resolve("auto");
           }
         );
       } catch {
-        callbacks.onError(
-          "PowerPoint meldet keine Folienwechsel. Manueller Modus aktiv."
-        );
         callbacks.onModeChange("hybrid");
         resolve("hybrid");
       }
@@ -94,47 +88,65 @@ export function initOfficeBridge(
   });
 }
 
+// No debounce: call immediately so getSelectedDataAsync still has focus on slide
 function handleSelectionChanged() {
-  if (debounceTimer) clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(() => {
-    void syncCurrentSlide();
-  }, DEBOUNCE_MS);
-}
-
-function handleActiveViewChanged() {
-  handleSelectionChanged();
+  void syncCurrentSlide();
 }
 
 async function syncCurrentSlide() {
   try {
     const info = await getCurrentSlideInfo();
     if (!info || !activeCallbacks) return;
-
     if (info.slideNumber !== lastReportedSlide) {
       lastReportedSlide = info.slideNumber;
       activeCallbacks.onSlideChange(info);
     }
-  } catch (error) {
-    activeCallbacks?.onError(`Folien-Update fehlgeschlagen: ${String(error)}`);
+  } catch {
+    // silently ignore transient errors
   }
 }
 
 function startPolling() {
   if (pollTimer) clearInterval(pollTimer);
-  pollTimer = setInterval(() => {
-    void syncCurrentSlide();
-  }, POLL_MS);
+  pollTimer = setInterval(() => void syncCurrentSlide(), POLL_MS);
+}
+
+function setupWindowListeners() {
+  if (typeof window === "undefined") return;
+
+  // Taskpane lost focus → user moved to presentation.
+  // Wait briefly for focus transfer to complete, then try reading.
+  windowBlurListener = () => setTimeout(() => void syncCurrentSlide(), 80);
+
+  // Taskpane gained focus → user just came from the slides.
+  // Read immediately before focus fully transfers to taskpane.
+  windowFocusListener = () => void syncCurrentSlide();
+
+  window.addEventListener("blur", windowBlurListener, { passive: true });
+  window.addEventListener("focus", windowFocusListener, { passive: true });
+}
+
+function teardownWindowListeners() {
+  if (typeof window === "undefined") return;
+  if (windowBlurListener) {
+    window.removeEventListener("blur", windowBlurListener);
+    windowBlurListener = null;
+  }
+  if (windowFocusListener) {
+    window.removeEventListener("focus", windowFocusListener);
+    windowFocusListener = null;
+  }
 }
 
 /**
- * Gets the current slide info.
+ * Get current slide info using two strategies:
  *
- * Uses the modern PowerPoint JS API (PowerPoint.run + getSelectedSlides) as
- * primary method — this works regardless of whether the taskpane or the
- * presentation canvas has keyboard focus.
+ * 1. PowerPoint JS API + getSelectedSlides() (PowerPointApi 1.5)
+ *    Focus-independent — works regardless of where keyboard focus is.
  *
- * Falls back to the legacy getSelectedDataAsync(SlideRange) for older Office
- * versions that don't support PowerPointApi 1.5.
+ * 2. Legacy getSelectedDataAsync(SlideRange)
+ *    Only works when focus is on the presentation (not the taskpane).
+ *    Called immediately on selection-change events so it often succeeds.
  */
 export function getCurrentSlideInfo(): Promise<OfficeSlideInfo | null> {
   return new Promise((resolve) => {
@@ -154,13 +166,12 @@ export function getCurrentSlideInfo(): Promise<OfficeSlideInfo | null> {
           const allSlides = context.presentation.slides;
           allSlides.load("items/id");
 
-          // getSelectedSlides requires PowerPointApi 1.5 — wrap in try/catch
           let selectedSlides: any = null;
           try {
             selectedSlides = context.presentation.getSelectedSlides();
             selectedSlides.load("items/id");
           } catch {
-            // Not available in this Office version; fall through to legacy API.
+            // getSelectedSlides requires PowerPointApi 1.5
           }
 
           await context.sync();
@@ -168,8 +179,8 @@ export function getCurrentSlideInfo(): Promise<OfficeSlideInfo | null> {
           const totalSlides: number = allSlides.items.length;
 
           if (selectedSlides && selectedSlides.items.length > 0) {
-            const selectedId: string = selectedSlides.items[0].id;
-            const allIds: string[] = allSlides.items.map((s: any) => s.id);
+            const selectedId = String(selectedSlides.items[0].id);
+            const allIds = allSlides.items.map((s: any) => String(s.id));
             const idx = allIds.indexOf(selectedId);
             if (idx >= 0) {
               resolve({ slideNumber: idx + 1, totalSlides, presentationTitle });
@@ -177,24 +188,22 @@ export function getCurrentSlideInfo(): Promise<OfficeSlideInfo | null> {
             }
           }
 
-          // PowerPoint.run succeeded but couldn't determine selected slide
-          // (getSelectedSlides unavailable). Fall back to legacy API.
-          legacyGetSlideInfo(presentationTitle, resolve);
+          // PowerPoint.run worked but getSelectedSlides not available — fall back
+          legacyGetSlideInfo(presentationTitle, totalSlides, resolve);
         } catch {
-          legacyGetSlideInfo(presentationTitle, resolve);
+          legacyGetSlideInfo(presentationTitle, 0, resolve);
         }
-      }).catch(() => {
-        legacyGetSlideInfo(presentationTitle, resolve);
-      });
+      }).catch(() => legacyGetSlideInfo(presentationTitle, 0, resolve));
       return;
     }
 
-    legacyGetSlideInfo(presentationTitle, resolve);
+    legacyGetSlideInfo(presentationTitle, 0, resolve);
   });
 }
 
 function legacyGetSlideInfo(
   presentationTitle: string,
+  knownTotalSlides: number,
   resolve: (value: OfficeSlideInfo | null) => void
 ): void {
   try {
@@ -217,6 +226,11 @@ function legacyGetSlideInfo(
 
         const slideNumber = slides[0].index + 1;
 
+        if (knownTotalSlides > 0) {
+          resolve({ slideNumber, totalSlides: knownTotalSlides, presentationTitle });
+          return;
+        }
+
         try {
           (Office.context.document as any).getSlideCountAsync(
             (countResult: { status: string; value: number }) => {
@@ -238,31 +252,27 @@ function legacyGetSlideInfo(
 }
 
 export function destroyOfficeBridge() {
-  if (debounceTimer) {
-    clearTimeout(debounceTimer);
-    debounceTimer = null;
-  }
   if (pollTimer) {
     clearInterval(pollTimer);
     pollTimer = null;
   }
-  if (!isInitialized || !isOfficeAvailable()) {
-    activeCallbacks = null;
-    lastReportedSlide = null;
-    return;
+  teardownWindowListeners();
+
+  if (isInitialized && isOfficeAvailable()) {
+    try {
+      Office.context.document.removeHandlerAsync(
+        Office.EventType.DocumentSelectionChanged,
+        { handler: handleSelectionChanged }
+      );
+      Office.context.document.removeHandlerAsync(
+        Office.EventType.ActiveViewChanged,
+        { handler: handleSelectionChanged }
+      );
+    } catch {
+      // ignore
+    }
   }
-  try {
-    Office.context.document.removeHandlerAsync(
-      Office.EventType.DocumentSelectionChanged,
-      { handler: handleSelectionChanged }
-    );
-    Office.context.document.removeHandlerAsync(
-      Office.EventType.ActiveViewChanged,
-      { handler: handleActiveViewChanged }
-    );
-  } catch {
-    // Ignore cleanup failures when Office already disposed the taskpane.
-  }
+
   isInitialized = false;
   activeCallbacks = null;
   lastReportedSlide = null;
