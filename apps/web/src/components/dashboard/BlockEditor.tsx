@@ -49,7 +49,6 @@ export function BlockEditor({ handoutId, block, onSave, onCancel }: BlockEditorP
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // N3: Give user feedback instead of silently returning
     if (!token) {
       setError("Nicht authentifiziert. Bitte erneut anmelden.");
       return;
@@ -59,10 +58,7 @@ export function BlockEditor({ handoutId, block, onSave, onCancel }: BlockEditorP
     setIsSaving(true);
 
     try {
-      // N4: parseInt with explicit radix 10 and NaN guard
-      const revealToSlideNum = revealToSlide
-        ? parseInt(revealToSlide, 10)
-        : undefined;
+      const revealToSlideNum = revealToSlide ? parseInt(revealToSlide, 10) : undefined;
 
       const revealRule = {
         revealSlide,
@@ -98,157 +94,148 @@ export function BlockEditor({ handoutId, block, onSave, onCancel }: BlockEditorP
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {/* N5: htmlFor + matching id on all labels/inputs */}
+    <form onSubmit={handleSubmit} className="space-y-5">
       <div>
-        <label className="label" htmlFor="block-title">Titel</label>
+        <label className="label" htmlFor="block-title">
+          Titel
+        </label>
         <input
           id="block-title"
           className="input"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Abschnitt-Titel"
+          placeholder="Abschnittstitel"
           required
         />
       </div>
 
       <div>
-        <div className="flex items-center justify-between mb-1">
-          <label className="label" htmlFor="block-content">Inhalt (Markdown)</label>
-          <div className="flex gap-1 bg-gray-100 p-0.5 rounded-md">
+        <div className="mb-2 flex items-center justify-between gap-4">
+          <label className="label !mb-0" htmlFor="block-content">
+            Inhalt
+          </label>
+          <div className="segmented-shell">
             <button
               type="button"
-              className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
-                contentTab === "edit"
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
+              className="segmented-button"
+              data-active={contentTab === "edit"}
               onClick={() => setContentTab("edit")}
             >
               Bearbeiten
             </button>
             <button
               type="button"
-              className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
-                contentTab === "preview"
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
+              className="segmented-button"
+              data-active={contentTab === "preview"}
               onClick={() => setContentTab("preview")}
             >
               Vorschau
             </button>
           </div>
         </div>
+
         {contentTab === "edit" ? (
           <textarea
             id="block-content"
-            className="textarea"
+            className="textarea min-h-[14rem]"
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            rows={8}
-            placeholder="## Überschrift&#10;&#10;Inhalt in Markdown..."
+            rows={10}
+            placeholder="## Ueberschrift&#10;&#10;Inhalt in Markdown..."
             required
           />
         ) : (
-          <div className="border border-gray-300 rounded-lg p-4 min-h-[12rem] bg-white prose prose-sm max-w-none markdown-content">
-            {content ? (
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
-            ) : (
-              <p className="text-gray-400 text-sm">Noch kein Inhalt eingegeben.</p>
-            )}
+          <div className="rounded-[24px] border border-stone-900/8 bg-white/75 p-5">
+            <div className="markdown-content min-h-[14rem]">
+              {content ? (
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+              ) : (
+                <p className="text-sm text-stone-400">Noch kein Inhalt eingegeben.</p>
+              )}
+            </div>
           </div>
         )}
       </div>
 
-      <div className="border-t pt-4">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">Freischalt-Regeln</h3>
-
-        <div className="space-y-3">
-          <div className="flex items-center gap-3">
+      <div className="rounded-[28px] border border-stone-900/8 bg-white/70 p-5">
+        <div className="eyebrow">Reveal-Regeln</div>
+        <div className="mt-4 space-y-4">
+          <label className="flex items-center gap-3 text-sm text-stone-700">
             <input
               type="checkbox"
-              id="alwaysVisible"
               checked={alwaysVisible}
               onChange={(e) => {
                 setAlwaysVisible(e.target.checked);
                 if (e.target.checked) setManuallyTriggered(false);
               }}
-              className="w-4 h-4"
+              className="h-4 w-4"
             />
-            <label htmlFor="alwaysVisible" className="text-sm text-gray-700">
-              Immer sichtbar (ignoriert Folien-Logik)
-            </label>
-          </div>
+            Immer sichtbar
+          </label>
 
-          <div className="flex items-center gap-3">
+          <label className="flex items-center gap-3 text-sm text-stone-700">
             <input
               type="checkbox"
-              id="manuallyTriggered"
               checked={manuallyTriggered}
               onChange={(e) => {
                 setManuallyTriggered(e.target.checked);
                 if (e.target.checked) setAlwaysVisible(false);
               }}
-              className="w-4 h-4"
+              className="h-4 w-4"
             />
-            <label htmlFor="manuallyTriggered" className="text-sm text-gray-700">
-              Nur manuell freischalten
-            </label>
-          </div>
+            Nur manuell freischalten
+          </label>
 
           {!alwaysVisible && !manuallyTriggered && (
-            <>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="label" htmlFor="reveal-slide">Ab Folie</label>
-                  <input
-                    id="reveal-slide"
-                    type="number"
-                    className="input"
-                    value={revealSlide}
-                    onChange={(e) => setRevealSlide(parseInt(e.target.value, 10) || 1)}
-                    min={1}
-                  />
-                </div>
-                <div>
-                  <label className="label" htmlFor="reveal-to-slide">Bis Folie (optional)</label>
-                  <input
-                    id="reveal-to-slide"
-                    type="number"
-                    className="input"
-                    value={revealToSlide}
-                    onChange={(e) => setRevealToSlide(e.target.value)}
-                    min={revealSlide}
-                    placeholder="–"
-                  />
-                </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="label" htmlFor="reveal-slide">
+                  Ab Folie
+                </label>
+                <input
+                  id="reveal-slide"
+                  type="number"
+                  className="input"
+                  value={revealSlide}
+                  onChange={(e) => setRevealSlide(parseInt(e.target.value, 10) || 1)}
+                  min={1}
+                />
               </div>
-
-              <div className="flex items-center gap-3">
+              <div>
+                <label className="label" htmlFor="reveal-to-slide">
+                  Bis Folie
+                </label>
+                <input
+                  id="reveal-to-slide"
+                  type="number"
+                  className="input"
+                  value={revealToSlide}
+                  onChange={(e) => setRevealToSlide(e.target.value)}
+                  min={revealSlide}
+                  placeholder="optional"
+                />
+              </div>
+              <label className="sm:col-span-2 flex items-center gap-3 text-sm text-stone-700">
                 <input
                   type="checkbox"
-                  id="relockOnBack"
                   checked={relockOnBack}
                   onChange={(e) => setRelockOnBack(e.target.checked)}
-                  className="w-4 h-4"
+                  className="h-4 w-4"
                 />
-                <label htmlFor="relockOnBack" className="text-sm text-gray-700">
-                  Wieder sperren beim Zurückgehen
-                </label>
-              </div>
-            </>
+                Wieder sperren beim Zurueckgehen
+              </label>
+            </div>
           )}
         </div>
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+        <div className="rounded-[22px] border border-red-300/40 bg-red-50/90 px-4 py-3 text-sm text-red-700">
           {error}
         </div>
       )}
 
-      <div className="flex gap-3 pt-2">
+      <div className="flex gap-3">
         <button type="submit" className="btn-primary flex-1" disabled={isSaving}>
           {isSaving ? "Speichert..." : block ? "Aktualisieren" : "Block erstellen"}
         </button>

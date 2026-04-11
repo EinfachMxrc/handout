@@ -35,7 +35,10 @@ export default function RegisterPage() {
     setIsLoading(true);
     try {
       const timeout = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Zeitüberschreitung – bitte erneut versuchen")), CONVEX_MUTATION_TIMEOUT_MS)
+        setTimeout(
+          () => reject(new Error("Zeitueberschreitung - bitte erneut versuchen")),
+          CONVEX_MUTATION_TIMEOUT_MS
+        )
       );
       const result = await Promise.race([register({ email, password, name }), timeout]);
       setAuth(result.token as string, name, email, result.isDemo ?? false);
@@ -48,18 +51,46 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md">
-        <div className="card">
-          <div className="text-center mb-8">
-            <span className="text-4xl">📑</span>
-            <h1 className="text-2xl font-bold text-gray-900 mt-2">Konto erstellen</h1>
-            <p className="text-gray-600 text-sm mt-1">Presenter-Dashboard</p>
+    <div className="page-shell flex min-h-screen items-center py-10">
+      <div className="grid w-full gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+        <section className="page-hero flex flex-col justify-between">
+          <div>
+            <span className="kicker-pill">New presenter setup</span>
+            <h1 className="page-title max-w-2xl text-5xl sm:text-6xl">
+              Bauen Sie sich eine eigene Arbeitsflaeche fuer Live-Handouts auf.
+            </h1>
+            <p className="page-copy max-w-xl">
+              Ein eigener Presenter-Account trennt Ihre Inhalte von der Demo,
+              macht Sessions schreibbar und gibt Ihnen vollen Zugriff auf Editor,
+              Session-Logik und PowerPoint-Integration.
+            </p>
+          </div>
+
+          <div className="mt-10 grid gap-4">
+            <div className="section-panel">
+              <div className="metric-label">Nach dem Login</div>
+              <p className="mt-3 text-base leading-7 text-stone-700">
+                Sie landen direkt im Dashboard, erstellen Ihr erstes Handout und
+                koennen daraus sofort eine Session fuer Publikum und Vortrag starten.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="card self-center p-8 sm:p-10">
+          <div className="mb-8">
+            <div className="eyebrow">Registrierung</div>
+            <h2 className="mt-3 text-4xl">Presenter-Konto erstellen</h2>
+            <p className="page-copy mt-2 max-w-none">
+              Der Account wird fuer Dashboard, Session-Steuerung und das Add-in genutzt.
+            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="label" htmlFor="name">Name</label>
+              <label className="label" htmlFor="name">
+                Name
+              </label>
               <input
                 id="name"
                 type="text"
@@ -71,7 +102,9 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="label" htmlFor="email">E-Mail</label>
+              <label className="label" htmlFor="email">
+                E-Mail
+              </label>
               <input
                 id="email"
                 type="email"
@@ -84,20 +117,22 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="label" htmlFor="password">Passwort</label>
+              <label className="label" htmlFor="password">
+                Passwort
+              </label>
               <input
                 id="password"
                 type="password"
                 className="input"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Mindestens 8 Zeichen"
+                placeholder="mindestens 8 Zeichen"
                 required
               />
             </div>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+              <div className="rounded-[22px] border border-red-300/40 bg-red-50/90 px-4 py-3 text-sm text-red-700">
                 {error}
               </div>
             )}
@@ -107,13 +142,18 @@ export default function RegisterPage() {
             </button>
           </form>
 
-          <p className="text-center text-sm text-gray-600 mt-6">
-            Bereits ein Konto?{" "}
-            <Link href="/auth/login" className="text-blue-600 hover:underline">
-              Anmelden
+          <div className="mt-6 flex flex-col gap-3 text-sm text-stone-600 sm:flex-row sm:items-center sm:justify-between">
+            <span>
+              Bereits registriert?{" "}
+              <Link href="/auth/login" className="font-semibold text-stone-900 underline decoration-stone-300">
+                Anmelden
+              </Link>
+            </span>
+            <Link href="/" className="text-stone-500 underline decoration-stone-300">
+              Zur Startseite
             </Link>
-          </p>
-        </div>
+          </div>
+        </section>
       </div>
     </div>
   );

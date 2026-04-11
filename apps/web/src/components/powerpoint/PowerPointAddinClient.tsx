@@ -380,37 +380,29 @@ export function PowerPointAddinClient() {
     : "";
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="mx-auto flex min-h-screen max-w-md flex-col gap-4 p-4">
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+    <div className="min-h-screen">
+      <div className="mx-auto flex min-h-screen max-w-lg flex-col gap-4 px-4 py-5">
+        <div className="card">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                PowerPoint Add-in
-              </p>
-              <h1 className="mt-1 text-xl font-semibold text-slate-950">
-                Slide Handout
-              </h1>
+              <p className="eyebrow">PowerPoint taskpane</p>
+              <h1 className="mt-3 text-4xl">Slide Handout</h1>
             </div>
-            <Link href="/powerpoint" className="btn-secondary px-3 py-1.5 text-xs">
+            <Link href="/powerpoint" className="btn-secondary">
               Install-Guide
             </Link>
           </div>
 
-          <div className="mt-4 grid gap-2 sm:grid-cols-2">
-            <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
-              <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-slate-500">
-                Verbindung
-              </div>
-              <div className="mt-1 text-sm font-medium text-slate-900">
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-[22px] border border-stone-900/8 bg-white/70 px-4 py-3">
+              <div className="metric-label">Verbindung</div>
+              <div className="mt-2 text-base font-semibold text-stone-900">
                 {token ? "Angemeldet" : "Nicht angemeldet"}
               </div>
             </div>
-            <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
-              <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-slate-500">
-                PowerPoint
-              </div>
-              <div className="mt-1 text-sm font-medium text-slate-900">
+            <div className="rounded-[22px] border border-stone-900/8 bg-white/70 px-4 py-3">
+              <div className="metric-label">PowerPoint</div>
+              <div className="mt-2 text-base font-semibold text-stone-900">
                 {officeDetected ? "Erkannt" : "Browser-Modus"}
               </div>
             </div>
@@ -418,18 +410,15 @@ export function PowerPointAddinClient() {
         </div>
 
         {!hydrated ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-500">
-            Lade Add-in...
-          </div>
+          <div className="section-panel text-sm text-stone-500">Lade Add-in...</div>
         ) : !token ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-4">
-            <h2 className="text-sm font-semibold text-slate-900">
-              Mit Presenter-Account anmelden
-            </h2>
-            <p className="mt-1 text-sm text-slate-600">
-              Verwenden Sie dieselben Zugangsdaten wie im Web-Dashboard.
+          <div className="card">
+            <div className="eyebrow">Anmeldung</div>
+            <h2 className="mt-3 text-3xl">Presenter-Account verbinden</h2>
+            <p className="page-copy mt-2 max-w-none">
+              Verwenden Sie dieselben Zugangsdaten wie im Dashboard.
             </p>
-            <form className="mt-4 space-y-3" onSubmit={handleLogin}>
+            <form className="mt-5 space-y-4" onSubmit={handleLogin}>
               <div>
                 <label className="label">E-Mail</label>
                 <input
@@ -455,7 +444,7 @@ export function PowerPointAddinClient() {
                 />
               </div>
               {loginError && (
-                <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                <div className="rounded-[22px] border border-red-300/40 bg-red-50/90 px-4 py-3 text-sm text-red-700">
                   {loginError}
                 </div>
               )}
@@ -466,28 +455,24 @@ export function PowerPointAddinClient() {
           </div>
         ) : (
           <>
-            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <div className="card">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h2 className="text-sm font-semibold text-slate-900">
-                    Presenter verbunden
-                  </h2>
-                  <p className="mt-1 text-sm text-slate-600">
-                    {presenterName || presenterEmail}
-                  </p>
+                  <div className="eyebrow">Verbunden</div>
+                  <h2 className="mt-3 text-3xl">{presenterName || presenterEmail}</h2>
                 </div>
-                <button className="btn-secondary px-3 py-1.5 text-xs" onClick={handleLogout}>
+                <button className="btn-secondary" onClick={handleLogout}>
                   Abmelden
                 </button>
               </div>
 
               {isDemo && (
-                <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                <div className="soft-note mt-5">
                   Demo-Modus erkannt. Schreibende Steuerung bleibt aus Sicherheitsgruenden gesperrt.
                 </div>
               )}
 
-              <div className="mt-4">
+              <div className="mt-5">
                 <label className="label">Session</label>
                 <select
                   className="input"
@@ -507,29 +492,22 @@ export function PowerPointAddinClient() {
                     </option>
                   ))}
                 </select>
-                <p className="mt-2 text-xs text-slate-500">
-                  Falls hier nichts auftaucht, erstellen Sie zuerst im Dashboard eine Session.
-                </p>
               </div>
             </div>
 
             {selectedSessionId && sessionData && (
               <>
-                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <div className="card">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                        Aktive Session
-                      </p>
-                      <h2 className="mt-1 text-lg font-semibold text-slate-950">
-                        {sessionData.handout?.title ?? "Ohne Titel"}
-                      </h2>
-                      <p className="mt-1 text-sm text-slate-600">
+                      <div className="eyebrow">Aktive Session</div>
+                      <h2 className="mt-3 text-3xl">{sessionData.handout?.title ?? "Ohne Titel"}</h2>
+                      <p className="mt-2 text-sm text-stone-600">
                         Status: {statusLabel[sessionData.session.status]}
                       </p>
                     </div>
                     <div
-                      className={`rounded-full border px-3 py-1 text-xs font-medium ${syncBadgeClasses[syncStatus]}`}
+                      className={`rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] ${syncBadgeClasses[syncStatus]}`}
                     >
                       {syncStatus === "auto"
                         ? "Auto-Sync"
@@ -541,57 +519,40 @@ export function PowerPointAddinClient() {
                     </div>
                   </div>
 
-                  <div className="mt-4 flex gap-2">
+                  <div className="mt-5 flex gap-3">
                     {sessionData.session.status === "draft" ? (
-                      <button
-                        className="btn-primary flex-1"
-                        onClick={handleStartSession}
-                        disabled={isDemo}
-                      >
+                      <button className="btn-primary flex-1" onClick={handleStartSession} disabled={isDemo}>
                         Session starten
                       </button>
                     ) : sessionData.session.status === "live" ? (
-                      <button
-                        className="btn-danger flex-1"
-                        onClick={handleStopSession}
-                        disabled={isDemo}
-                      >
+                      <button className="btn-danger flex-1" onClick={handleStopSession} disabled={isDemo}>
                         Session beenden
                       </button>
                     ) : (
-                      <div className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-center text-sm text-slate-600">
+                      <div className="flex-1 rounded-[20px] border border-stone-900/8 bg-stone-100/60 px-4 py-3 text-center text-sm text-stone-600">
                         Diese Session ist bereits beendet.
                       </div>
                     )}
                     {publicUrl && (
-                      <a
-                        href={publicUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="btn-secondary"
-                      >
+                      <a href={publicUrl} target="_blank" rel="noreferrer" className="btn-secondary">
                         Handout
                       </a>
                     )}
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <div className="text-center">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                      Aktuelle Folie
-                    </p>
-                    <div className="mt-2 text-5xl font-semibold tracking-tight text-slate-950">
-                      {lastKnownSlide}
-                    </div>
-                    <p className="mt-1 text-sm text-slate-500">
+                <div className="card">
+                  <div className="rounded-[24px] border border-stone-900/8 bg-white/72 p-5 text-center">
+                    <div className="metric-label">Aktuelle Folie</div>
+                    <div className="mt-3 text-6xl text-stone-900">{lastKnownSlide}</div>
+                    <p className="mt-2 text-sm text-stone-500">
                       {sessionData.session.totalSlides
                         ? `von ${sessionData.session.totalSlides} Folien`
                         : "ohne bekannte Gesamtzahl"}
                     </p>
                   </div>
 
-                  <div className="mt-4 grid grid-cols-2 gap-2">
+                  <div className="mt-4 grid grid-cols-2 gap-3">
                     <button
                       className="btn-secondary"
                       onClick={() => void handleManualSlide(lastKnownSlide - 1)}
@@ -609,7 +570,7 @@ export function PowerPointAddinClient() {
                   </div>
 
                   <form
-                    className="mt-3 flex gap-2"
+                    className="mt-4 flex gap-3"
                     onSubmit={(event) => {
                       event.preventDefault();
                       const parsed = Number.parseInt(slideInput, 10);
@@ -629,18 +590,14 @@ export function PowerPointAddinClient() {
                       onChange={(event) => setSlideInput(event.target.value)}
                       placeholder="Folie direkt setzen"
                     />
-                    <button
-                      className="btn-secondary whitespace-nowrap"
-                      type="submit"
-                      disabled={isDemo || isSyncing}
-                    >
+                    <button className="btn-secondary whitespace-nowrap" type="submit" disabled={isDemo || isSyncing}>
                       Setzen
                     </button>
                   </form>
 
-                  <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                  <div className="mt-4 rounded-[22px] border border-stone-900/8 bg-stone-100/65 px-4 py-3 text-sm leading-7 text-stone-600">
                     {officeDetected
-                      ? "Wenn PowerPoint Folienwechsel meldet, synchronisiert das Add-in automatisch. Die Tasten hier bleiben als Fallback aktiv."
+                      ? "Wenn PowerPoint Folienwechsel meldet, synchronisiert das Add-in automatisch. Die Tasten bleiben als Fallback aktiv."
                       : "Im Browser koennen Sie den Ablauf ohne PowerPoint testen. Auto-Sync ist dort nicht verfuegbar."}
                   </div>
                 </div>
@@ -648,15 +605,13 @@ export function PowerPointAddinClient() {
             )}
 
             {selectedSessionId && !sessionData && (
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-500">
-                Session wird geladen...
-              </div>
+              <div className="section-panel text-sm text-stone-500">Session wird geladen...</div>
             )}
 
             {!selectedSessionId && sessions !== undefined && sessions.length === 0 && (
-              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
+              <div className="section-panel border-dashed text-sm text-stone-600">
                 Noch keine Session vorhanden. Erstellen Sie im{" "}
-                <Link href="/dashboard" className="font-medium text-blue-600 hover:underline">
+                <Link href="/dashboard" className="font-semibold underline decoration-stone-300">
                   Dashboard
                 </Link>{" "}
                 ein Handout und starten Sie daraus eine Session.
@@ -666,7 +621,7 @@ export function PowerPointAddinClient() {
         )}
 
         {actionError && (
-          <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          <div className="rounded-[22px] border border-red-300/40 bg-red-50/90 px-4 py-3 text-sm text-red-700">
             {actionError}
           </div>
         )}

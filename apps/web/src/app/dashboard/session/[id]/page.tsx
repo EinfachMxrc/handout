@@ -90,7 +90,7 @@ export default function SessionPage() {
   const [activeView, setActiveView] = useState<"control" | "preview">("control");
 
   if (!data) {
-    return <div className="text-center py-12 text-gray-500">Lädt Session...</div>;
+    return <div className="section-panel text-center text-stone-500">Laedt Session...</div>;
   }
 
   const { session, handout, blocks } = data;
@@ -110,107 +110,108 @@ export default function SessionPage() {
     ended: "Beendet",
   };
 
+  const visibleBlocks = blocks.filter((block) => block.isVisible);
+
   return (
-    <div>
+    <div className="space-y-8">
       {isDemo && (
-        <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          Demo-Modus: Session-Steuerung, Live-Freischaltungen und Add-in-Verbindung sind für den frei zugänglichen Demo-Account deaktiviert.
+        <div className="soft-note">
+          Demo-Modus: Session-Steuerung, Live-Freischaltungen und Add-in-Verbindung
+          sind fuer den frei zugaenglichen Demo-Account deaktiviert.
         </div>
       )}
 
-      <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
-        <Link href="/dashboard" className="hover:text-gray-700">Dashboard</Link>
-        <span>/</span>
-        {handout && (
-          <>
-            <Link
-              href={`/dashboard/handout/${session.handoutId}`}
-              className="hover:text-gray-700"
-            >
-              {handout.title}
-            </Link>
-            <span>/</span>
-          </>
-        )}
-        <span className="text-gray-900">Session</span>
-      </div>
+      <section className="page-hero">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <div className="flex flex-wrap items-center gap-2 text-sm text-stone-500">
+              <Link href="/dashboard" className="underline decoration-stone-300">
+                Dashboard
+              </Link>
+              <span>/</span>
+              {handout && (
+                <>
+                  <Link href={`/dashboard/handout/${session.handoutId}`} className="underline decoration-stone-300">
+                    {handout.title}
+                  </Link>
+                  <span>/</span>
+                </>
+              )}
+              <span>Session</span>
+            </div>
 
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <h1 className="text-xl font-bold text-gray-900">
-            {handout?.title ?? "Session"}
-          </h1>
-          <Badge variant={statusColor[session.status] ?? "gray"}>
-            {statusLabel[session.status] ?? session.status}
-          </Badge>
-          {session.status === "live" && isViewerCountLoaded && (
-            <span className="text-sm text-gray-500 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
-              {viewerCount} {viewerCount === 1 ? "Zuschauer" : "Zuschauer"}
-            </span>
-          )}
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <h1 className="page-title m-0 text-5xl">{handout?.title ?? "Session"}</h1>
+              <Badge variant={statusColor[session.status] ?? "gray"}>
+                {statusLabel[session.status] ?? session.status}
+              </Badge>
+            </div>
+
+            <p className="page-copy max-w-2xl">
+              Steuern Sie Folienstand, manuelle Reveal-Blocks, QR-Zugang und
+              PowerPoint-Anbindung von einer kompakten Session-Oberflaeche aus.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            {session.status === "draft" && (
+              <button
+                className="btn-primary"
+                onClick={() =>
+                  token &&
+                  startSession({ token, sessionId: sessionId as Id<"presentationSessions"> })
+                }
+                disabled={isDemo}
+              >
+                Session starten
+              </button>
+            )}
+            {session.status === "live" && (
+              <button
+                className="btn-danger"
+                onClick={() =>
+                  confirm("Session beenden?") &&
+                  token &&
+                  stopSession({ token, sessionId: sessionId as Id<"presentationSessions"> })
+                }
+                disabled={isDemo}
+              >
+                Beenden
+              </button>
+            )}
+            <button className="btn-secondary" onClick={() => setIsQROpen(true)}>
+              QR-Code
+            </button>
+            <a href={publicUrl} target="_blank" rel="noopener noreferrer" className="btn-secondary">
+              Handout oeffnen
+            </a>
+          </div>
         </div>
 
-        <div className="flex gap-2">
-          {session.status === "draft" && (
-            <button
-              className="btn-primary"
-              onClick={() =>
-                token &&
-                startSession({ token, sessionId: sessionId as Id<"presentationSessions"> })
-              }
-              disabled={isDemo}
-            >
-              Session starten
-            </button>
-          )}
-          {session.status === "live" && (
-            <button
-              className="btn-danger"
-              onClick={() =>
-                confirm("Session beenden?") &&
-                token &&
-                stopSession({ token, sessionId: sessionId as Id<"presentationSessions"> })
-              }
-              disabled={isDemo}
-            >
-              Beenden
-            </button>
-          )}
-          <button className="btn-secondary" onClick={() => setIsQROpen(true)}>
-            QR-Code
-          </button>
-          <a
-            href={publicUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-secondary"
-          >
-            Handout öffnen ↗
-          </a>
+        <div className="mt-8 grid gap-4 md:grid-cols-3">
+          <div className="metric-card">
+            <div className="metric-label">Oeffentlicher Link</div>
+            <div className="mt-3 truncate text-sm font-semibold text-stone-900">{fullPublicUrl}</div>
+          </div>
+          <div className="metric-card">
+            <div className="metric-label">Zuschauer</div>
+            <div className="metric-value">
+              {session.status === "live" && isViewerCountLoaded ? viewerCount : 0}
+            </div>
+          </div>
+          <div className="metric-card">
+            <div className="metric-label">Sichtbare Blocks</div>
+            <div className="metric-value">{visibleBlocks.length}</div>
+          </div>
         </div>
-      </div>
+      </section>
 
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6 flex items-center gap-3">
-        <span className="text-blue-700 text-sm font-medium">Öffentlicher Link:</span>
-        <code className="text-blue-900 text-sm flex-1 truncate">{fullPublicUrl}</code>
-        <button
-          className="text-blue-600 text-sm hover:underline flex-shrink-0"
-          onClick={() => navigator.clipboard.writeText(fullPublicUrl)}
-        >
-          Kopieren
-        </button>
-      </div>
-
-      <div className="flex gap-1 mb-4 bg-gray-100 p-1 rounded-lg w-fit">
+      <div className="segmented-shell">
         {(["control", "preview"] as const).map((view) => (
           <button
             key={view}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              activeView === view
-                ? "bg-white text-gray-900 shadow-sm"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
+            className="segmented-button"
+            data-active={activeView === view}
             onClick={() => setActiveView(view)}
           >
             {view === "control" ? "Steuerung" : "Vorschau"}
@@ -218,10 +219,20 @@ export default function SessionPage() {
         ))}
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
-        <div className="space-y-4">
-          <div className="card">
-            <h2 className="font-semibold text-gray-900 mb-4">Folien-Steuerung</h2>
+      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        <div className="space-y-6">
+          <section className="section-panel">
+            <div className="mb-5 flex items-center justify-between gap-3">
+              <div>
+                <div className="eyebrow">Session control</div>
+                <h2 className="mt-3 text-4xl">Folien-Steuerung</h2>
+              </div>
+              {session.status === "live" && isViewerCountLoaded && (
+                <div className="rounded-full border border-emerald-500/20 bg-emerald-50/90 px-3 py-2 text-sm text-emerald-800">
+                  {viewerCount} Zuschauer aktiv
+                </div>
+              )}
+            </div>
             <SlideControls
               sessionId={sessionId}
               currentSlide={session.currentSlide}
@@ -229,80 +240,80 @@ export default function SessionPage() {
               syncMode={session.syncMode}
               disabled={isDemo}
             />
-          </div>
+          </section>
 
-          <div className="card">
+          <section className="section-panel">
+            <div className="eyebrow">PowerPoint</div>
+            <h2 className="mt-3 text-4xl">Add-in und Live-Verbindung</h2>
             {isDemo ? (
-              <div className="text-sm text-gray-500">
+              <p className="page-copy">
                 Im Demo-Modus bleibt die Presenter-Steuerung im PowerPoint Add-in deaktiviert.
-              </div>
+              </p>
             ) : (
-              <div className="space-y-4">
-                <div>
-                  <h2 className="font-semibold text-gray-900">PowerPoint Add-in</h2>
-                  <p className="mt-2 text-sm text-gray-600">
-                    Das Add-in wird jetzt über Ihre Vercel-Domain ausgeliefert.
-                    Nach der Installation melden Sie sich direkt im Taskpane mit
-                    Ihrem normalen Account an und wählen dort diese Session aus.
-                  </p>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <a href="/powerpoint" className="btn-primary justify-center">
-                    Install-Seite öffnen
+              <>
+                <p className="page-copy">
+                  Das Add-in wird ueber dieselbe Web-App ausgeliefert. Nach der
+                  Installation melden Sie sich im Taskpane an und waehlen dort
+                  diese Session aus.
+                </p>
+                <div className="mt-5 flex flex-wrap gap-3">
+                  <a href="/powerpoint" className="btn-primary">
+                    Install-Seite
                   </a>
-                  <a href="/powerpoint/manifest" className="btn-secondary justify-center">
+                  <a href="/powerpoint/manifest" className="btn-secondary">
                     Manifest herunterladen
                   </a>
                 </div>
-
-                <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
-                  Schnellweg:{" "}
-                  <span className="font-medium text-gray-900">
-                    PowerPoint &gt; Einfügen &gt; Add-Ins &gt; Eigene Add-Ins &gt; Add-In hochladen
-                  </span>
-                  <span className="block mt-1">
-                    Danach das Taskpane öffnen, einloggen und die gewünschte Session auswählen.
-                  </span>
-                </div>
-              </div>
+              </>
             )}
-          </div>
+          </section>
 
-          <div className="card">
-            <h2 className="font-semibold text-gray-900 mb-3">Blöcke</h2>
-            <div className="space-y-2">
+          <section className="section-panel">
+            <div className="mb-5">
+              <div className="eyebrow">Reveal-Status</div>
+              <h2 className="mt-3 text-4xl">Bloecke im Ueberblick</h2>
+            </div>
+            <div className="space-y-3">
               {blocks.map((block) => (
                 <div
                   key={block._id}
-                  className={`flex items-center justify-between p-2 rounded-lg border ${
+                  className={`rounded-[24px] border p-4 transition-colors ${
                     block.isVisible
-                      ? "border-green-200 bg-green-50"
-                      : "border-gray-200 bg-gray-50"
+                      ? "border-emerald-500/18 bg-emerald-50/70"
+                      : "border-stone-900/8 bg-white/60"
                   }`}
                 >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${block.isVisible ? "bg-green-500" : "bg-gray-300"}`} />
-                    <span className="text-sm text-gray-900 truncate">{block.title}</span>
-                  </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    {!block.isVisible && (
-                      <span className="text-xs text-gray-500">
-                        Ab Folie {block.revealRule.alwaysVisible ? "–" : block.revealRule.revealSlide}
-                      </span>
-                    )}
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className={`h-2.5 w-2.5 rounded-full ${block.isVisible ? "bg-emerald-500" : "bg-stone-300"}`} />
+                        <h3 className="text-lg font-semibold text-stone-900">{block.title}</h3>
+                      </div>
+                      <p className="mt-2 text-sm text-stone-600">
+                        {block.revealRule.alwaysVisible
+                          ? "Immer sichtbar"
+                          : block.revealRule.manuallyTriggered
+                          ? "Manuelle Freigabe"
+                          : `Ab Folie ${block.revealRule.revealSlide}`}
+                      </p>
+                    </div>
+
                     {block.revealRule.manuallyTriggered && (
                       <button
-                        className={`text-xs px-2 py-1 rounded ${
-                          block.isVisible
-                            ? "bg-red-100 text-red-700 hover:bg-red-200"
-                            : "bg-blue-100 text-blue-700 hover:bg-blue-200"
-                        }`}
+                        className={block.isVisible ? "btn-danger" : "btn-secondary"}
                         onClick={() =>
                           token &&
                           (block.isVisible
-                            ? unTriggerBlock({ token, sessionId: sessionId as Id<"presentationSessions">, blockId: block._id })
-                            : triggerBlock({ token, sessionId: sessionId as Id<"presentationSessions">, blockId: block._id }))
+                            ? unTriggerBlock({
+                                token,
+                                sessionId: sessionId as Id<"presentationSessions">,
+                                blockId: block._id,
+                              })
+                            : triggerBlock({
+                                token,
+                                sessionId: sessionId as Id<"presentationSessions">,
+                                blockId: block._id,
+                              }))
                         }
                         disabled={isDemo}
                       >
@@ -313,37 +324,32 @@ export default function SessionPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </section>
         </div>
 
         {activeView === "preview" && (
-          <div className="card">
-            <h2 className="font-semibold text-gray-900 mb-4">
-              Live-Vorschau
-              <span className="text-xs font-normal text-gray-500 ml-2">
-                (wie Zuschauer sehen)
-              </span>
-            </h2>
-            <div className="space-y-4 max-h-[500px] overflow-y-auto">
-              {blocks.filter((block) => block.isVisible).length === 0 && (
-                <p className="text-sm text-gray-500 text-center py-4">
-                  Noch keine Inhalte freigeschaltet.
-                </p>
-              )}
-              {blocks
-                .filter((block) => block.isVisible)
-                .map((block) => (
-                  <div key={block._id} className="border border-gray-200 rounded-lg p-4">
-                    <h3 className="font-semibold text-gray-900 mb-2">{block.title}</h3>
-                    <div className="prose prose-sm max-w-none markdown-content">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {block.content}
-                      </ReactMarkdown>
-                    </div>
-                  </div>
-                ))}
+          <section className="section-panel">
+            <div className="mb-5">
+              <div className="eyebrow">Live reader</div>
+              <h2 className="mt-3 text-4xl">Vorschau fuer Zuschauer</h2>
             </div>
-          </div>
+
+            <div className="space-y-4">
+              {visibleBlocks.length === 0 && (
+                <div className="rounded-[24px] border border-dashed border-stone-900/12 bg-white/55 px-5 py-8 text-center text-sm text-stone-500">
+                  Noch keine Inhalte freigeschaltet.
+                </div>
+              )}
+              {visibleBlocks.map((block) => (
+                <article key={block._id} className="rounded-[24px] border border-stone-900/8 bg-white/72 p-5">
+                  <h3 className="text-2xl">{block.title}</h3>
+                  <div className="markdown-content mt-4">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{block.content}</ReactMarkdown>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
         )}
       </div>
 
