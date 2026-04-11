@@ -21,7 +21,9 @@ let pollTimer: ReturnType<typeof setInterval> | null = null;
 let windowBlurListener: (() => void) | null = null;
 let windowFocusListener: (() => void) | null = null;
 
-const POLL_MS = 500;
+// Slower poll during slideshow (taskpane may be in background)
+const POLL_EDIT_MS = 500;
+const POLL_READ_MS = 1000;
 
 export function isOfficeAvailable(): boolean {
   return typeof Office !== "undefined" && typeof Office.context !== "undefined";
@@ -66,7 +68,7 @@ export function initOfficeBridge(
       isInitialized = true;
 
       void syncCurrentSlide();
-      startPolling();
+      startPolling(POLL_EDIT_MS);
       setupWindowListeners();
 
       try {
@@ -83,7 +85,7 @@ export function initOfficeBridge(
             try {
               Office.context.document.addHandlerAsync(
                 Office.EventType.ActiveViewChanged,
-                handleSelectionChanged
+                handleActiveViewChanged
               );
             } catch {
               // optional
@@ -99,9 +101,26 @@ export function initOfficeBridge(
   });
 }
 
-// No debounce — call immediately while slide is still the active selection
 function handleSelectionChanged() {
   void syncCurrentSlide();
+}
+
+function handleActiveViewChanged(args: { activeView?: string }) {
+  const view = args?.activeView ?? "edit";
+
+  if (view === "read") {
+    // Slideshow started — PowerPoint Online opens a new browser window for
+    // the actual slideshow. The add-in runs in the original editor window
+    // and cannot access the slideshow context. Tracking is limited to what
+    // the editor document reports (which may not match the presented slide).
+    // Keep the last known slide and poll less aggressively.
+    startPolling(POLL_READ_MS);
+  } else {
+    // Returned to edit mode — re-sync immediately.
+    lastReportedSlide = null;
+    startPolling(POLL_EDIT_MS);
+    void syncCurrentSlide();
+  }
 }
 
 async function syncCurrentSlide() {
@@ -117,9 +136,9 @@ async function syncCurrentSlide() {
   }
 }
 
-function startPolling() {
+function startPolling(intervalMs: number) {
   if (pollTimer) clearInterval(pollTimer);
-  pollTimer = setInterval(() => void syncCurrentSlide(), POLL_MS);
+  pollTimer = setInterval(() => void syncCurrentSlide(), intervalMs);
 }
 
 function setupWindowListeners() {
@@ -143,15 +162,18 @@ function teardownWindowListeners() {
 }
 
 /**
- * Get current slide info.
- *
  * Current slide  → getSelectedDataAsync(SlideRange)
- *   index is 1-based in Office.js — use it directly (no +1).
+ *   index is 1-based in Office.js — use directly (no +1).
  *   Works in Online always; works in Desktop when slide has focus.
- *   Desktop fallback: PowerPoint.run + getSelectedSlides (focus-independent).
+ *   Desktop fallback: PowerPoint.run + getSelectedSlides.
+ *
+ * Note on slideshow: PowerPoint Online opens presentations in a new
+ * browser window. The add-in runs in the editor window which cannot
+ * access the slideshow context — getSelectedDataAsync will return the
+ * editor's current slide, not the presented one. This is a platform
+ * limitation; use manual slide controls during fullscreen slideshow.
  *
  * Total slides → PowerPoint.run().slides.items.length (reliable everywhere).
- *   Fallback: getSlideCountAsync.
  */
 export function getCurrentSlideInfo(): Promise<OfficeSlideInfo | null> {
   return new Promise((resolve) => {
@@ -179,8 +201,9 @@ export function getCurrentSlideInfo(): Promise<OfficeSlideInfo | null> {
             !slides ||
             slides.length === 0
           ) {
-            // getSelectedDataAsync failed (Desktop taskpane-focus issue).
-            // Try PowerPoint.run as Desktop-only fallback.
+            // Failed — Desktop taskpane-focus issue.
+            // Skip PowerPoint.run fallback in Online edit mode because
+            // getSelectedSlides returns wrong data there.
             if (!isOnline() && isPowerPointApiAvailable()) {
               powerPointRunGetSlide(presentationTitle, resolve);
             } else {
@@ -191,7 +214,6 @@ export function getCurrentSlideInfo(): Promise<OfficeSlideInfo | null> {
 
           // index is 1-based in Office.js — use directly, no +1
           const slideNumber = slides[0].index;
-
           fetchTotalSlides(presentationTitle, slideNumber, resolve);
         }
       );
@@ -201,11 +223,6 @@ export function getCurrentSlideInfo(): Promise<OfficeSlideInfo | null> {
   });
 }
 
-/**
- * Fetch total slide count.
- * Prefers PowerPoint.run (works in Online + Desktop, no focus dependency).
- * Falls back to getSlideCountAsync for environments without the JS API.
- */
 function fetchTotalSlides(
   presentationTitle: string,
   slideNumber: number,
@@ -247,7 +264,6 @@ function legacySlideCount(
   }
 }
 
-/** Desktop-only fallback via PowerPoint JS API. */
 function powerPointRunGetSlide(
   presentationTitle: string,
   resolve: (v: OfficeSlideInfo | null) => void
@@ -301,7 +317,7 @@ export function destroyOfficeBridge() {
       );
       Office.context.document.removeHandlerAsync(
         Office.EventType.ActiveViewChanged,
-        { handler: handleSelectionChanged }
+        { handler: handleActiveViewChanged }
       );
     } catch {
       // ignore
