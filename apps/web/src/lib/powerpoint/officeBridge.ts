@@ -21,6 +21,7 @@ let pollTimer: ReturnType<typeof setInterval> | null = null;
 let windowBlurListener: (() => void) | null = null;
 let windowFocusListener: (() => void) | null = null;
 
+// Poll often enough to catch slide changes in both Online and Desktop
 const POLL_MS = 500;
 
 export function isOfficeAvailable(): boolean {
@@ -32,6 +33,18 @@ function isPowerPointApiAvailable(): boolean {
     typeof (globalThis as any).PowerPoint !== "undefined" &&
     typeof (globalThis as any).PowerPoint.run === "function"
   );
+}
+
+/** True when running inside PowerPoint Online (browser-based). */
+function isOnline(): boolean {
+  try {
+    return (
+      isOfficeAvailable() &&
+      Office.context.platform === Office.PlatformType.OfficeOnline
+    );
+  } catch {
+    return false;
+  }
 }
 
 export function initOfficeBridge(
@@ -56,6 +69,11 @@ export function initOfficeBridge(
 
       void syncCurrentSlide();
       startPolling();
+
+      // Window blur/focus helps on Desktop: when the user clicks into the
+      // slide panel the taskpane iframe loses focus — good moment to read.
+      // (In Online everything is same-window, so these fire less usefully
+      // but do no harm.)
       setupWindowListeners();
 
       try {
@@ -88,7 +106,7 @@ export function initOfficeBridge(
   });
 }
 
-// No debounce: call immediately so getSelectedDataAsync still has focus on slide
+// No debounce — read immediately while the slide is still the active selection
 function handleSelectionChanged() {
   void syncCurrentSlide();
 }
@@ -113,15 +131,8 @@ function startPolling() {
 
 function setupWindowListeners() {
   if (typeof window === "undefined") return;
-
-  // Taskpane lost focus → user moved to presentation.
-  // Wait briefly for focus transfer to complete, then try reading.
   windowBlurListener = () => setTimeout(() => void syncCurrentSlide(), 80);
-
-  // Taskpane gained focus → user just came from the slides.
-  // Read immediately before focus fully transfers to taskpane.
   windowFocusListener = () => void syncCurrentSlide();
-
   window.addEventListener("blur", windowBlurListener, { passive: true });
   window.addEventListener("focus", windowFocusListener, { passive: true });
 }
@@ -139,14 +150,15 @@ function teardownWindowListeners() {
 }
 
 /**
- * Get current slide info using two strategies:
+ * Strategy:
  *
- * 1. PowerPoint JS API + getSelectedSlides() (PowerPointApi 1.5)
- *    Focus-independent — works regardless of where keyboard focus is.
+ * 1. getSelectedDataAsync(SlideRange) — PRIMARY for both Online and Desktop.
+ *    In PowerPoint Online this always works.
+ *    In Desktop it works when focus is on the slide (event handler, no debounce).
  *
- * 2. Legacy getSelectedDataAsync(SlideRange)
- *    Only works when focus is on the presentation (not the taskpane).
- *    Called immediately on selection-change events so it often succeeds.
+ * 2. PowerPoint.run + getSelectedSlides() — FALLBACK for Desktop only.
+ *    In Online, getSelectedSlides() may return wrong data (e.g. always slide 1)
+ *    so we skip it when running in Online mode.
  */
 export function getCurrentSlideInfo(): Promise<OfficeSlideInfo | null> {
   return new Promise((resolve) => {
@@ -160,95 +172,97 @@ export function getCurrentSlideInfo(): Promise<OfficeSlideInfo | null> {
       rawTitle.split(/[/\\]/).pop()?.replace(/\.pptx?$/i, "") ??
       "Praesentation";
 
-    if (isPowerPointApiAvailable()) {
-      (globalThis as any).PowerPoint.run(async (context: any) => {
-        try {
-          const allSlides = context.presentation.slides;
-          allSlides.load("items/id");
-
-          let selectedSlides: any = null;
-          try {
-            selectedSlides = context.presentation.getSelectedSlides();
-            selectedSlides.load("items/id");
-          } catch {
-            // getSelectedSlides requires PowerPointApi 1.5
-          }
-
-          await context.sync();
-
-          const totalSlides: number = allSlides.items.length;
-
-          if (selectedSlides && selectedSlides.items.length > 0) {
-            const selectedId = String(selectedSlides.items[0].id);
-            const allIds = allSlides.items.map((s: any) => String(s.id));
-            const idx = allIds.indexOf(selectedId);
-            if (idx >= 0) {
-              resolve({ slideNumber: idx + 1, totalSlides, presentationTitle });
+    // ── Primary: getSelectedDataAsync ────────────────────────────────────────
+    try {
+      Office.context.document.getSelectedDataAsync(
+        Office.CoercionType.SlideRange,
+        (slideResult: {
+          status: string;
+          value?: { slides?: Array<{ index: number }> };
+        }) => {
+          if (slideResult.status !== Office.AsyncResultStatus.Failed) {
+            const slides = slideResult.value?.slides;
+            if (slides && slides.length > 0) {
+              const slideNumber = slides[0].index + 1; // index is 0-based
+              getSlideCount(presentationTitle, slideNumber, resolve);
               return;
             }
           }
 
-          // PowerPoint.run worked but getSelectedSlides not available — fall back
-          legacyGetSlideInfo(presentationTitle, totalSlides, resolve);
-        } catch {
-          legacyGetSlideInfo(presentationTitle, 0, resolve);
+          // ── Fallback: PowerPoint JS API (Desktop only) ───────────────────
+          // Skip in Online because getSelectedSlides() unreliably returns
+          // slide 1 there regardless of which slide is actually displayed.
+          if (!isOnline() && isPowerPointApiAvailable()) {
+            powerPointRunGetSlide(presentationTitle, resolve);
+          } else {
+            resolve(null);
+          }
         }
-      }).catch(() => legacyGetSlideInfo(presentationTitle, 0, resolve));
-      return;
+      );
+    } catch {
+      resolve(null);
     }
-
-    legacyGetSlideInfo(presentationTitle, 0, resolve);
   });
 }
 
-function legacyGetSlideInfo(
+/** Get total slide count, then resolve. */
+function getSlideCount(
   presentationTitle: string,
-  knownTotalSlides: number,
-  resolve: (value: OfficeSlideInfo | null) => void
+  slideNumber: number,
+  resolve: (v: OfficeSlideInfo | null) => void
 ): void {
   try {
-    Office.context.document.getSelectedDataAsync(
-      Office.CoercionType.SlideRange,
-      (slideResult: {
-        status: string;
-        value?: { slides?: Array<{ index: number }> };
-      }) => {
-        if (slideResult.status === Office.AsyncResultStatus.Failed) {
-          resolve(null);
-          return;
-        }
-
-        const slides = slideResult.value?.slides;
-        if (!slides || slides.length === 0) {
-          resolve(null);
-          return;
-        }
-
-        const slideNumber = slides[0].index + 1;
-
-        if (knownTotalSlides > 0) {
-          resolve({ slideNumber, totalSlides: knownTotalSlides, presentationTitle });
-          return;
-        }
-
-        try {
-          (Office.context.document as any).getSlideCountAsync(
-            (countResult: { status: string; value: number }) => {
-              const totalSlides =
-                countResult.status === Office.AsyncResultStatus.Succeeded
-                  ? countResult.value
-                  : slideNumber;
-              resolve({ slideNumber, totalSlides, presentationTitle });
-            }
-          );
-        } catch {
-          resolve({ slideNumber, totalSlides: slideNumber, presentationTitle });
-        }
+    (Office.context.document as any).getSlideCountAsync(
+      (countResult: { status: string; value: number }) => {
+        const totalSlides =
+          countResult.status === Office.AsyncResultStatus.Succeeded
+            ? countResult.value
+            : slideNumber;
+        resolve({ slideNumber, totalSlides, presentationTitle });
       }
     );
   } catch {
-    resolve(null);
+    resolve({ slideNumber, totalSlides: slideNumber, presentationTitle });
   }
+}
+
+/** Desktop fallback: PowerPoint.run + getSelectedSlides (PowerPointApi 1.5). */
+function powerPointRunGetSlide(
+  presentationTitle: string,
+  resolve: (v: OfficeSlideInfo | null) => void
+): void {
+  (globalThis as any).PowerPoint.run(async (context: any) => {
+    try {
+      const allSlides = context.presentation.slides;
+      allSlides.load("items/id");
+
+      let selectedSlides: any = null;
+      try {
+        selectedSlides = context.presentation.getSelectedSlides();
+        selectedSlides.load("items/id");
+      } catch {
+        // PowerPointApi 1.5 not available
+      }
+
+      await context.sync();
+
+      const totalSlides: number = allSlides.items.length;
+
+      if (selectedSlides && selectedSlides.items.length > 0) {
+        const selectedId = String(selectedSlides.items[0].id);
+        const allIds = allSlides.items.map((s: any) => String(s.id));
+        const idx = allIds.indexOf(selectedId);
+        if (idx >= 0) {
+          resolve({ slideNumber: idx + 1, totalSlides, presentationTitle });
+          return;
+        }
+      }
+
+      resolve(null);
+    } catch {
+      resolve(null);
+    }
+  }).catch(() => resolve(null));
 }
 
 export function destroyOfficeBridge() {
