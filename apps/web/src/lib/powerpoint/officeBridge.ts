@@ -21,7 +21,6 @@ let pollTimer: ReturnType<typeof setInterval> | null = null;
 let windowBlurListener: (() => void) | null = null;
 let windowFocusListener: (() => void) | null = null;
 
-// Poll often enough to catch slide changes in both Online and Desktop
 const POLL_MS = 500;
 
 export function isOfficeAvailable(): boolean {
@@ -35,7 +34,6 @@ function isPowerPointApiAvailable(): boolean {
   );
 }
 
-/** True when running inside PowerPoint Online (browser-based). */
 function isOnline(): boolean {
   try {
     return (
@@ -69,11 +67,6 @@ export function initOfficeBridge(
 
       void syncCurrentSlide();
       startPolling();
-
-      // Window blur/focus helps on Desktop: when the user clicks into the
-      // slide panel the taskpane iframe loses focus — good moment to read.
-      // (In Online everything is same-window, so these fire less usefully
-      // but do no harm.)
       setupWindowListeners();
 
       try {
@@ -106,7 +99,7 @@ export function initOfficeBridge(
   });
 }
 
-// No debounce — read immediately while the slide is still the active selection
+// No debounce — call immediately while slide is still the active selection
 function handleSelectionChanged() {
   void syncCurrentSlide();
 }
@@ -120,7 +113,7 @@ async function syncCurrentSlide() {
       activeCallbacks.onSlideChange(info);
     }
   } catch {
-    // silently ignore transient errors
+    // ignore transient errors
   }
 }
 
@@ -150,15 +143,15 @@ function teardownWindowListeners() {
 }
 
 /**
- * Strategy:
+ * Get current slide info.
  *
- * 1. getSelectedDataAsync(SlideRange) — PRIMARY for both Online and Desktop.
- *    In PowerPoint Online this always works.
- *    In Desktop it works when focus is on the slide (event handler, no debounce).
+ * Current slide  → getSelectedDataAsync(SlideRange)
+ *   index is 1-based in Office.js — use it directly (no +1).
+ *   Works in Online always; works in Desktop when slide has focus.
+ *   Desktop fallback: PowerPoint.run + getSelectedSlides (focus-independent).
  *
- * 2. PowerPoint.run + getSelectedSlides() — FALLBACK for Desktop only.
- *    In Online, getSelectedSlides() may return wrong data (e.g. always slide 1)
- *    so we skip it when running in Online mode.
+ * Total slides → PowerPoint.run().slides.items.length (reliable everywhere).
+ *   Fallback: getSlideCountAsync.
  */
 export function getCurrentSlideInfo(): Promise<OfficeSlideInfo | null> {
   return new Promise((resolve) => {
@@ -172,7 +165,6 @@ export function getCurrentSlideInfo(): Promise<OfficeSlideInfo | null> {
       rawTitle.split(/[/\\]/).pop()?.replace(/\.pptx?$/i, "") ??
       "Praesentation";
 
-    // ── Primary: getSelectedDataAsync ────────────────────────────────────────
     try {
       Office.context.document.getSelectedDataAsync(
         Office.CoercionType.SlideRange,
@@ -180,23 +172,27 @@ export function getCurrentSlideInfo(): Promise<OfficeSlideInfo | null> {
           status: string;
           value?: { slides?: Array<{ index: number }> };
         }) => {
-          if (slideResult.status !== Office.AsyncResultStatus.Failed) {
-            const slides = slideResult.value?.slides;
-            if (slides && slides.length > 0) {
-              const slideNumber = slides[0].index + 1; // index is 0-based
-              getSlideCount(presentationTitle, slideNumber, resolve);
-              return;
+          const slides = slideResult.value?.slides;
+
+          if (
+            slideResult.status === Office.AsyncResultStatus.Failed ||
+            !slides ||
+            slides.length === 0
+          ) {
+            // getSelectedDataAsync failed (Desktop taskpane-focus issue).
+            // Try PowerPoint.run as Desktop-only fallback.
+            if (!isOnline() && isPowerPointApiAvailable()) {
+              powerPointRunGetSlide(presentationTitle, resolve);
+            } else {
+              resolve(null);
             }
+            return;
           }
 
-          // ── Fallback: PowerPoint JS API (Desktop only) ───────────────────
-          // Skip in Online because getSelectedSlides() unreliably returns
-          // slide 1 there regardless of which slide is actually displayed.
-          if (!isOnline() && isPowerPointApiAvailable()) {
-            powerPointRunGetSlide(presentationTitle, resolve);
-          } else {
-            resolve(null);
-          }
+          // index is 1-based in Office.js — use directly, no +1
+          const slideNumber = slides[0].index;
+
+          fetchTotalSlides(presentationTitle, slideNumber, resolve);
         }
       );
     } catch {
@@ -205,8 +201,33 @@ export function getCurrentSlideInfo(): Promise<OfficeSlideInfo | null> {
   });
 }
 
-/** Get total slide count, then resolve. */
-function getSlideCount(
+/**
+ * Fetch total slide count.
+ * Prefers PowerPoint.run (works in Online + Desktop, no focus dependency).
+ * Falls back to getSlideCountAsync for environments without the JS API.
+ */
+function fetchTotalSlides(
+  presentationTitle: string,
+  slideNumber: number,
+  resolve: (v: OfficeSlideInfo | null) => void
+): void {
+  if (isPowerPointApiAvailable()) {
+    (globalThis as any).PowerPoint.run(async (context: any) => {
+      try {
+        context.presentation.slides.load("items/id");
+        await context.sync();
+        const totalSlides: number = context.presentation.slides.items.length;
+        resolve({ slideNumber, totalSlides, presentationTitle });
+      } catch {
+        legacySlideCount(presentationTitle, slideNumber, resolve);
+      }
+    }).catch(() => legacySlideCount(presentationTitle, slideNumber, resolve));
+    return;
+  }
+  legacySlideCount(presentationTitle, slideNumber, resolve);
+}
+
+function legacySlideCount(
   presentationTitle: string,
   slideNumber: number,
   resolve: (v: OfficeSlideInfo | null) => void
@@ -226,7 +247,7 @@ function getSlideCount(
   }
 }
 
-/** Desktop fallback: PowerPoint.run + getSelectedSlides (PowerPointApi 1.5). */
+/** Desktop-only fallback via PowerPoint JS API. */
 function powerPointRunGetSlide(
   presentationTitle: string,
   resolve: (v: OfficeSlideInfo | null) => void
