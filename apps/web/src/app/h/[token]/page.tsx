@@ -74,9 +74,9 @@ export default function PublicHandoutPage() {
       <div className="page-shell flex min-h-screen items-center justify-center py-10">
         <div className="section-panel max-w-xl text-center">
           <div className="eyebrow">Nicht gefunden</div>
-          <h1 className="mt-3 text-5xl">Handout nicht verfuegbar</h1>
+          <h1 className="mt-3 text-5xl">Handout nicht verfügbar</h1>
           <p className="page-copy mx-auto">
-            Dieser Link ist ungueltig oder die Session ist nicht mehr erreichbar.
+            Dieser Link ist ungültig oder die Session ist nicht mehr erreichbar.
           </p>
         </div>
       </div>
@@ -142,10 +142,10 @@ export default function PublicHandoutPage() {
           {visibleBlocks.length === 0 ? (
             <div className="empty-state">
               <div className="eyebrow">Noch keine Freigabe</div>
-              <h2 className="mt-3 text-4xl">Inhalte erscheinen waehrend des Vortrags.</h2>
+              <h2 className="mt-3 text-4xl">Inhalte erscheinen während des Vortrags.</h2>
               <p className="page-copy mx-auto max-w-xl">
                 {sessionInfo.status === "draft"
-                  ? "Die Praesentation wurde noch nicht gestartet."
+                  ? "Die Präsentation wurde noch nicht gestartet."
                   : "Sobald neue Abschnitte freigegeben werden, erscheinen sie hier im Reader."}
               </p>
             </div>

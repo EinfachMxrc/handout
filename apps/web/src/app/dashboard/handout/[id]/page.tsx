@@ -121,7 +121,7 @@ function DraggableBlock({
             Bearbeiten
           </button>
           <button className="btn-danger" onClick={() => onDelete(block._id)} disabled={isReadonly}>
-            Loeschen
+            Löschen
           </button>
         </div>
       </div>
@@ -208,7 +208,7 @@ export default function HandoutEditPage() {
   };
 
   if (!data) {
-    return <div className="section-panel text-center text-stone-500">Laedt Handout...</div>;
+    return <div className="section-panel text-center text-stone-500">Lädt Handout...</div>;
   }
 
   const blocks = [...data.blocks].sort((a, b) => a.order - b.order);
@@ -218,7 +218,7 @@ export default function HandoutEditPage() {
     if (rule.manuallyTriggered) return "Manuell";
     let label = `Ab Folie ${rule.revealSlide}`;
     if (rule.revealToSlide) label += ` bis ${rule.revealToSlide}`;
-    if (rule.relockOnBack) label += " ruecksperrend";
+    if (rule.relockOnBack) label += " rücksperrend";
     return label;
   };
 
@@ -227,7 +227,7 @@ export default function HandoutEditPage() {
       {isDemo && (
         <div className="soft-note">
           Dieses Handout ist im Demo-Account nur lesbar. Bearbeiten, Blocks
-          anlegen oder Sessions starten bleibt fuer alle Demo-Nutzer gesperrt.
+          anlegen oder Sessions starten bleibt für alle Demo-Nutzer gesperrt.
         </div>
       )}
 
@@ -279,11 +279,11 @@ export default function HandoutEditPage() {
       <section className="section-panel">
         <div className="mb-6 flex items-end justify-between gap-4">
           <div>
-            <div className="eyebrow">Inhaltsbloecke</div>
+            <div className="eyebrow">Inhaltsblöcke</div>
             <h2 className="mt-3 text-4xl">Struktur und Reveal-Regeln</h2>
           </div>
           <button className="btn-primary" onClick={() => setIsCreatingBlock(true)} disabled={isDemo}>
-            Block hinzufuegen
+            Block hinzufügen
           </button>
         </div>
 
@@ -311,7 +311,7 @@ export default function HandoutEditPage() {
                   isReadonly={isDemo}
                   onEdit={(id) => setEditingBlockId(id)}
                   onDelete={(id) => {
-                    if (confirm("Block loeschen?") && token) {
+                    if (confirm("Block löschen?") && token) {
                       deleteBlock({ token, blockId: id as Id<"handoutBlocks"> });
                     }
                   }}

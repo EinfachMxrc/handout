@@ -449,7 +449,7 @@ export function PowerPointAddinClient() {
                 </div>
               )}
               <button className="btn-primary w-full" type="submit" disabled={loginPending}>
-                {loginPending ? "Anmeldung laeuft..." : "Anmelden"}
+                {loginPending ? "Anmeldung läuft..." : "Anmelden"}
               </button>
             </form>
           </div>
@@ -468,7 +468,7 @@ export function PowerPointAddinClient() {
 
               {isDemo && (
                 <div className="soft-note mt-5">
-                  Demo-Modus erkannt. Schreibende Steuerung bleibt aus Sicherheitsgruenden gesperrt.
+                  Demo-Modus erkannt. Schreibende Steuerung bleibt aus Sicherheitsgründen gesperrt.
                 </div>
               )}
 
@@ -484,7 +484,7 @@ export function PowerPointAddinClient() {
                       ? "Sessions werden geladen..."
                       : sessions.length === 0
                       ? "Keine Sessions vorhanden"
-                      : "Session auswaehlen"}
+                      : "Session auswählen"}
                   </option>
                   {sessionOptions.map((session) => (
                     <option key={session._id} value={session._id}>
@@ -558,7 +558,7 @@ export function PowerPointAddinClient() {
                       onClick={() => void handleManualSlide(lastKnownSlide - 1)}
                       disabled={isDemo || isSyncing}
                     >
-                      Zurueck
+                      Zurück
                     </button>
                     <button
                       className="btn-primary"
@@ -598,7 +598,7 @@ export function PowerPointAddinClient() {
                   <div className="mt-4 rounded-[22px] border border-stone-900/8 bg-stone-100/65 px-4 py-3 text-sm leading-7 text-stone-600">
                     {officeDetected
                       ? "Wenn PowerPoint Folienwechsel meldet, synchronisiert das Add-in automatisch. Die Tasten bleiben als Fallback aktiv."
-                      : "Im Browser koennen Sie den Ablauf ohne PowerPoint testen. Auto-Sync ist dort nicht verfuegbar."}
+                      : "Im Browser können Sie den Ablauf ohne PowerPoint testen. Auto-Sync ist dort nicht verfügbar."}
                   </div>
                 </div>
               </>

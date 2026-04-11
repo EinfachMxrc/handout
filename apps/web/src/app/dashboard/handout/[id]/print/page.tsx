@@ -32,12 +32,12 @@ export default function HandoutPrintPage() {
     if (rule.manuallyTriggered) return "Manuell";
     let label = `Ab Folie ${rule.revealSlide}`;
     if (rule.revealToSlide) label += `-${rule.revealToSlide}`;
-    if (rule.relockOnBack) label += " ruecksperrend";
+    if (rule.relockOnBack) label += " rücksperrend";
     return label;
   };
 
   if (!data) {
-    return <div className="p-8 text-stone-500">Laedt...</div>;
+    return <div className="p-8 text-stone-500">Lädt...</div>;
   }
 
   const blocks = [...data.blocks].sort((a, b) => a.order - b.order);
@@ -56,7 +56,7 @@ export default function HandoutPrintPage() {
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link href={`/dashboard/handout/${handoutId}`} className="btn-secondary">
-              Zurueck
+              Zurück
             </Link>
             <div>
               <div className="eyebrow">Druckansicht</div>
@@ -74,7 +74,7 @@ export default function HandoutPrintPage() {
           <h1 className="text-5xl">{data.title}</h1>
           {data.description && <p className="mt-3 max-w-2xl text-base text-stone-600">{data.description}</p>}
           <p className="mt-4 text-xs uppercase tracking-[0.18em] text-stone-500 no-print">
-            {blocks.length} Bloecke · Reveal-Regeln als Badge sichtbar
+            {blocks.length} Blöcke · Reveal-Regeln als Badge sichtbar
           </p>
         </header>
 

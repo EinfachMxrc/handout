@@ -96,9 +96,9 @@ export default function DashboardPage() {
               Verwalten Sie Handouts, Sessions und Ihren gesamten Vortragsfluss.
             </h1>
             <p className="page-copy max-w-2xl">
-              Diese Arbeitsflaeche ist Ihr Steuerpult fuer Inhalt, Reveal-Regeln
+              Diese Arbeitsfläche ist Ihr Steuerpult für Inhalt, Reveal-Regeln
               und Live-Freigaben. Handouts werden hier gebaut, Sessions von hier
-              gestartet und oeffentliche Leseransichten von hier verteilt.
+              gestartet und öffentliche Leseransichten von hier verteilt.
             </p>
           </div>
 
@@ -125,7 +125,7 @@ export default function DashboardPage() {
             <div className="metric-value">{counts.liveSessions}</div>
           </div>
           <div className="metric-card">
-            <div className="metric-label">Entwuerfe</div>
+            <div className="metric-label">Entwürfe</div>
             <div className="metric-value">{counts.drafts}</div>
           </div>
         </div>
@@ -147,7 +147,7 @@ export default function DashboardPage() {
       {activeTab === "handouts" && (
         <section>
           {!handouts ? (
-            <div className="section-panel text-center text-stone-500">Laedt Handouts...</div>
+            <div className="section-panel text-center text-stone-500">Lädt Handouts...</div>
           ) : handouts.length === 0 ? (
             <div className="empty-state">
               <div className="eyebrow">Noch leer</div>
@@ -196,12 +196,12 @@ export default function DashboardPage() {
                         className="btn-danger"
                         disabled={isDemo}
                         onClick={() =>
-                          confirm("Handout wirklich loeschen?") &&
+                          confirm("Handout wirklich löschen?") &&
                           token &&
                           deleteHandout({ token, handoutId: handout._id as Id<"handouts"> })
                         }
                       >
-                        Loeschen
+                        Löschen
                       </button>
                     </div>
                   </div>
@@ -216,21 +216,21 @@ export default function DashboardPage() {
         <section className="space-y-4">
           {hasSessionConflicts && (
             <div className="soft-note">
-              Es laufen mehrere Live-Sessions fuer dasselbe Handout gleichzeitig.
-              Beenden Sie nicht mehr benoetigte Sessions, damit die Freigabelogik
+              Es laufen mehrere Live-Sessions für dasselbe Handout gleichzeitig.
+              Beenden Sie nicht mehr benötigte Sessions, damit die Freigabelogik
               eindeutig bleibt.
             </div>
           )}
 
           {!sessions ? (
-            <div className="section-panel text-center text-stone-500">Laedt Sessions...</div>
+            <div className="section-panel text-center text-stone-500">Lädt Sessions...</div>
           ) : sessions.length === 0 ? (
             <div className="empty-state">
               <div className="eyebrow">Noch keine Session</div>
               <h2 className="mt-3 text-4xl">Starten Sie eine Session aus einem Handout.</h2>
               <p className="page-copy mx-auto max-w-xl">
-                Sobald ein Handout vorbereitet ist, koennen Sie daraus einen
-                Live-Lesemodus fuer Publikum und PowerPoint-Steuerung erzeugen.
+                Sobald ein Handout vorbereitet ist, können Sie daraus einen
+                Live-Lesemodus für Publikum und PowerPoint-Steuerung erzeugen.
               </p>
             </div>
           ) : (
@@ -261,7 +261,7 @@ export default function DashboardPage() {
                       className="btn-primary"
                       onClick={() => router.push(`/dashboard/session/${session._id}`)}
                     >
-                      Oeffnen
+                      Öffnen
                     </button>
                     <a
                       href={`/h/${session.publicToken}`}
@@ -274,12 +274,12 @@ export default function DashboardPage() {
                       className="btn-danger"
                       disabled={isDemo}
                       onClick={() =>
-                        confirm("Session loeschen?") &&
+                        confirm("Session löschen?") &&
                         token &&
                         deleteSession({ token, sessionId: session._id as Id<"presentationSessions"> })
                       }
                     >
-                      Loeschen
+                        Löschen
                     </button>
                   </div>
                 </article>
@@ -297,7 +297,7 @@ export default function DashboardPage() {
               className="input"
               value={newHandoutTitle}
               onChange={(e) => setNewHandoutTitle(e.target.value)}
-              placeholder="z. B. Einfuehrung in KI"
+              placeholder="z. B. Einführung in KI"
               required
               autoFocus
             />

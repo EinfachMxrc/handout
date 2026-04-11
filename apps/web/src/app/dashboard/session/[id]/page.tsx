@@ -90,7 +90,7 @@ export default function SessionPage() {
   const [activeView, setActiveView] = useState<"control" | "preview">("control");
 
   if (!data) {
-    return <div className="section-panel text-center text-stone-500">Laedt Session...</div>;
+    return <div className="section-panel text-center text-stone-500">Lädt Session...</div>;
   }
 
   const { session, handout, blocks } = data;
@@ -117,7 +117,7 @@ export default function SessionPage() {
       {isDemo && (
         <div className="soft-note">
           Demo-Modus: Session-Steuerung, Live-Freischaltungen und Add-in-Verbindung
-          sind fuer den frei zugaenglichen Demo-Account deaktiviert.
+          sind für den frei zugänglichen Demo-Account deaktiviert.
         </div>
       )}
 
@@ -149,7 +149,7 @@ export default function SessionPage() {
 
             <p className="page-copy max-w-2xl">
               Steuern Sie Folienstand, manuelle Reveal-Blocks, QR-Zugang und
-              PowerPoint-Anbindung von einer kompakten Session-Oberflaeche aus.
+              PowerPoint-Anbindung von einer kompakten Session-Oberfläche aus.
             </p>
           </div>
 
@@ -183,14 +183,14 @@ export default function SessionPage() {
               QR-Code
             </button>
             <a href={publicUrl} target="_blank" rel="noopener noreferrer" className="btn-secondary">
-              Handout oeffnen
+              Handout öffnen
             </a>
           </div>
         </div>
 
         <div className="mt-8 grid gap-4 md:grid-cols-3">
           <div className="metric-card">
-            <div className="metric-label">Oeffentlicher Link</div>
+            <div className="metric-label">Öffentlicher Link</div>
             <div className="mt-3 truncate text-sm font-semibold text-stone-900">{fullPublicUrl}</div>
           </div>
           <div className="metric-card">
@@ -252,8 +252,8 @@ export default function SessionPage() {
             ) : (
               <>
                 <p className="page-copy">
-                  Das Add-in wird ueber dieselbe Web-App ausgeliefert. Nach der
-                  Installation melden Sie sich im Taskpane an und waehlen dort
+                  Das Add-in wird über dieselbe Web-App ausgeliefert. Nach der
+                  Installation melden Sie sich im Taskpane an und wählen dort
                   diese Session aus.
                 </p>
                 <div className="mt-5 flex flex-wrap gap-3">
@@ -271,7 +271,7 @@ export default function SessionPage() {
           <section className="section-panel">
             <div className="mb-5">
               <div className="eyebrow">Reveal-Status</div>
-              <h2 className="mt-3 text-4xl">Bloecke im Ueberblick</h2>
+              <h2 className="mt-3 text-4xl">Blöcke im Überblick</h2>
             </div>
             <div className="space-y-3">
               {blocks.map((block) => (
@@ -331,7 +331,7 @@ export default function SessionPage() {
           <section className="section-panel">
             <div className="mb-5">
               <div className="eyebrow">Live reader</div>
-              <h2 className="mt-3 text-4xl">Vorschau fuer Zuschauer</h2>
+              <h2 className="mt-3 text-4xl">Vorschau für Zuschauer</h2>
             </div>
 
             <div className="space-y-4">

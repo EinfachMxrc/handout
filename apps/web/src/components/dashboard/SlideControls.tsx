@@ -117,7 +117,7 @@ export function SlideControls({
           }
           disabled={disabled || isLoading || currentSlide <= 1}
         >
-          Zurueck
+          Zurück
         </button>
         <button
           className="btn-primary flex-1"

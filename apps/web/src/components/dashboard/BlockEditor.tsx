@@ -141,7 +141,7 @@ export function BlockEditor({ handoutId, block, onSave, onCancel }: BlockEditorP
             value={content}
             onChange={(e) => setContent(e.target.value)}
             rows={10}
-            placeholder="## Ueberschrift&#10;&#10;Inhalt in Markdown..."
+            placeholder="## Überschrift&#10;&#10;Inhalt in Markdown..."
             required
           />
         ) : (
@@ -222,7 +222,7 @@ export function BlockEditor({ handoutId, block, onSave, onCancel }: BlockEditorP
                   onChange={(e) => setRelockOnBack(e.target.checked)}
                   className="h-4 w-4"
                 />
-                Wieder sperren beim Zurueckgehen
+                Wieder sperren beim Zurückgehen
               </label>
             </div>
           )}

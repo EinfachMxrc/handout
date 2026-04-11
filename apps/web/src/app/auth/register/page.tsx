@@ -36,7 +36,7 @@ export default function RegisterPage() {
     try {
       const timeout = new Promise<never>((_, reject) =>
         setTimeout(
-          () => reject(new Error("Zeitueberschreitung - bitte erneut versuchen")),
+          () => reject(new Error("Zeitüberschreitung - bitte erneut versuchen")),
           CONVEX_MUTATION_TIMEOUT_MS
         )
       );
@@ -57,7 +57,7 @@ export default function RegisterPage() {
           <div>
             <span className="kicker-pill">New presenter setup</span>
             <h1 className="page-title max-w-2xl text-5xl sm:text-6xl">
-              Bauen Sie sich eine eigene Arbeitsflaeche fuer Live-Handouts auf.
+              Bauen Sie sich eine eigene Arbeitsfläche für Live-Handouts auf.
             </h1>
             <p className="page-copy max-w-xl">
               Ein eigener Presenter-Account trennt Ihre Inhalte von der Demo,
@@ -71,7 +71,7 @@ export default function RegisterPage() {
               <div className="metric-label">Nach dem Login</div>
               <p className="mt-3 text-base leading-7 text-stone-700">
                 Sie landen direkt im Dashboard, erstellen Ihr erstes Handout und
-                koennen daraus sofort eine Session fuer Publikum und Vortrag starten.
+                können daraus sofort eine Session für Publikum und Vortrag starten.
               </p>
             </div>
           </div>
@@ -82,7 +82,7 @@ export default function RegisterPage() {
             <div className="eyebrow">Registrierung</div>
             <h2 className="mt-3 text-4xl">Presenter-Konto erstellen</h2>
             <p className="page-copy mt-2 max-w-none">
-              Der Account wird fuer Dashboard, Session-Steuerung und das Add-in genutzt.
+              Der Account wird für Dashboard, Session-Steuerung und das Add-in genutzt.
             </p>
           </div>
 

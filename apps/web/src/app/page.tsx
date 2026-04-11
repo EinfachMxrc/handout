@@ -3,22 +3,22 @@ import Link from "next/link";
 const featureCards = [
   {
     title: "Foliengesteuerte Freigabe",
-    body: "Blocks werden entlang Ihrer Praesentation sichtbar, ohne dass Zuschauer vorlesen oder nachfragen muessen.",
+    body: "Blocks werden entlang Ihrer Präsentation sichtbar, ohne dass Zuschauer vorlesen oder nachfragen müssen.",
   },
   {
     title: "Presenter-Steuerung",
-    body: "Dashboard, Session-Ansicht und PowerPoint-Add-in greifen in dieselbe Live-Logik. Sie behalten die Kontrolle ueber jede Freigabe.",
+    body: "Dashboard, Session-Ansicht und PowerPoint-Add-in greifen in dieselbe Live-Logik. Sie behalten die Kontrolle über jede Freigabe.",
   },
   {
-    title: "Reader statt Datenmuell",
-    body: "Das oeffentliche Handout fuehlt sich wie ein sauber gesetztes Dokument an, nicht wie eine generische Companion-App.",
+    title: "Reader statt Datenmüll",
+    body: "Das öffentliche Handout fühlt sich wie ein sauber gesetztes Dokument an, nicht wie eine generische Companion-App.",
   },
 ];
 
 const workflowSteps = [
   "Handout strukturieren und Reveal-Regeln pro Block setzen.",
-  "Session starten und den oeffentlichen Link per QR oder Direktlink teilen.",
-  "Waerend des Vortrags Slides weiterschalten, Inhalte live freigeben und mit dem Publikum synchron bleiben.",
+  "Session starten und den öffentlichen Link per QR oder Direktlink teilen.",
+  "Während des Vortrags Slides weiterschalten, Inhalte live freigeben und mit dem Publikum synchron bleiben.",
 ];
 
 export default function HomePage() {
@@ -30,18 +30,18 @@ export default function HomePage() {
             <div className="animate-fade-up">
               <span className="kicker-pill">Live handouts for real presentations</span>
               <h1 className="page-title text-balance">
-                Ein Handout, das mit Ihrer Praesentation mitdenkt.
+                Ein Handout, das mit Ihrer Präsentation mitdenkt.
               </h1>
               <p className="page-copy text-balance">
                 Slide Handout verbindet Vortrag, Publikum und Nachbereitung in
-                einer einzigen Leseflaeche. Statt PDFs mit zu viel Inhalt
-                entsteht ein kontrollierter Reader, der Satz fuer Satz mit dem
-                Vortrag waechst.
+                einer einzigen Lesefläche. Statt PDFs mit zu viel Inhalt
+                entsteht ein kontrollierter Reader, der Satz für Satz mit dem
+                Vortrag wächst.
               </p>
 
               <div className="mt-8 flex flex-wrap gap-3">
                 <Link href="/dashboard" className="btn-primary">
-                  Dashboard oeffnen
+                  Dashboard öffnen
                 </Link>
                 <Link href="/auth/register" className="btn-secondary">
                   Presenter-Account erstellen
@@ -55,7 +55,7 @@ export default function HomePage() {
                 {[
                   { label: "Reveal-Logik", value: "Slide by slide" },
                   { label: "Reader-Ansicht", value: "Live und druckbar" },
-                  { label: "Demo", value: "Sofort pruefbar" },
+                  { label: "Demo", value: "Sofort prüfbar" },
                 ].map((item) => (
                   <div key={item.label} className="metric-card">
                     <div className="metric-label">{item.label}</div>
@@ -97,7 +97,7 @@ export default function HomePage() {
 
                   <div className="soft-note">
                     Demo-Zugang: <code>demo@example.com</code> / <code>demo1234</code>
-                    . Der Demo-Account bleibt bewusst schreibgeschuetzt.
+                    . Der Demo-Account bleibt bewusst schreibgeschützt.
                   </div>
                 </div>
               </div>
@@ -120,7 +120,7 @@ export default function HomePage() {
             <div className="eyebrow">Ablauf</div>
             <h2 className="mt-3 text-4xl">Vom Manuskript zur Live-Session</h2>
             <p className="page-copy">
-              Die App ist fuer Vortraege gebaut, bei denen das Publikum die
+              Die App ist für Vorträge gebaut, bei denen das Publikum die
               richtigen Informationen genau dann sehen soll, wenn Sie dort im
               Raum auch angekommen sind.
             </p>

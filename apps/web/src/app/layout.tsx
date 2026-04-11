@@ -15,7 +15,7 @@ const instrumentSans = Instrument_Sans({
 
 export const metadata: Metadata = {
   title: "Slide Handout",
-  description: "Live-Handout fuer Praesentationen",
+  description: "Live-Handout für Präsentationen",
 };
 
 export default function RootLayout({

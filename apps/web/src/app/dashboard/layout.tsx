@@ -79,9 +79,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {isDemo && (
           <div className="soft-note mb-6">
-            Demo-Modus: Dieser Account ist absichtlich schreibgeschuetzt. Sie
-            koennen Demo-Daten ansehen, aber keine Handouts, Sessions oder
-            Freischaltungen veraendern.
+            Demo-Modus: Dieser Account ist absichtlich schreibgeschützt. Sie
+            können Demo-Daten ansehen, aber keine Handouts, Sessions oder
+            Freischaltungen verändern.
           </div>
         )}
 

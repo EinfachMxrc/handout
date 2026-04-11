@@ -22,7 +22,7 @@ export function QRCodeDialog({ isOpen, onClose, publicUrl, handoutTitle }: QRCod
     <Modal isOpen={isOpen} onClose={onClose} title="QR-Code und Link" size="sm">
       <div className="space-y-5 text-center">
         <div>
-          <div className="eyebrow">Oeffentliche Leseransicht</div>
+          <div className="eyebrow">Öffentliche Leseransicht</div>
           <p className="mt-3 text-lg font-semibold text-stone-900">{handoutTitle}</p>
         </div>
 
@@ -44,7 +44,7 @@ export function QRCodeDialog({ isOpen, onClose, publicUrl, handoutTitle }: QRCod
             rel="noopener noreferrer"
             className="btn-primary flex-1 text-center"
           >
-            Oeffnen
+            Öffnen
           </a>
         </div>
       </div>

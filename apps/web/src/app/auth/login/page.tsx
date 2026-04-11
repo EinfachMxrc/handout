@@ -31,7 +31,7 @@ export default function LoginPage() {
     try {
       const timeout = new Promise<never>((_, reject) =>
         setTimeout(
-          () => reject(new Error("Zeitueberschreitung - bitte erneut versuchen")),
+          () => reject(new Error("Zeitüberschreitung - bitte erneut versuchen")),
           CONVEX_MUTATION_TIMEOUT_MS
         )
       );
@@ -52,12 +52,12 @@ export default function LoginPage() {
           <div>
             <span className="kicker-pill">Presenter access</span>
             <h1 className="page-title max-w-2xl text-5xl sm:text-6xl">
-              Melden Sie sich an und fuehren Sie das Publikum strukturiert durch den Vortrag.
+              Melden Sie sich an und führen Sie das Publikum strukturiert durch den Vortrag.
             </h1>
             <p className="page-copy max-w-xl">
               Das Dashboard, die Session-Steuerung und das PowerPoint-Add-in
               teilen sich denselben Presenter-Login. Nach dem Sign-in landen Sie
-              direkt in Ihrer Arbeitsflaeche.
+              direkt in Ihrer Arbeitsfläche.
             </p>
           </div>
 
@@ -66,14 +66,14 @@ export default function LoginPage() {
               <div className="metric-label">Demo</div>
               <div className="mt-3 text-base font-semibold">demo@example.com</div>
               <p className="mt-2 text-sm leading-6 text-stone-600">
-                Demo-Zugang fuer einen schnellen Blick auf den Reader und die Session-Oberflaechen.
+                Demo-Zugang für einen schnellen Blick auf den Reader und die Session-Oberflächen.
               </p>
             </div>
             <div className="metric-card">
               <div className="metric-label">Sicherheit</div>
               <div className="mt-3 text-base font-semibold">Demo bleibt read-only</div>
               <p className="mt-2 text-sm leading-6 text-stone-600">
-                Der gemeinsame Demo-Account kann keine Inhalte veraendern oder Live-Logik manipulieren.
+                Der gemeinsame Demo-Account kann keine Inhalte verändern oder Live-Logik manipulieren.
               </p>
             </div>
           </div>
@@ -84,7 +84,7 @@ export default function LoginPage() {
             <div className="eyebrow">Anmeldung</div>
             <h2 className="mt-3 text-4xl">Presenter-Dashboard</h2>
             <p className="page-copy mt-2 max-w-none">
-              Nutzen Sie denselben Zugang fuer Dashboard, Session-Steuerung und Add-in.
+              Nutzen Sie denselben Zugang für Dashboard, Session-Steuerung und Add-in.
             </p>
           </div>
 
