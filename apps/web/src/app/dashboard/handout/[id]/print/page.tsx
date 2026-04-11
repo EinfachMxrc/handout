@@ -20,25 +20,24 @@ export default function HandoutPrintPage() {
     token ? { token, handoutId: handoutId as Id<"handouts"> } : "skip"
   );
 
-  // Print-Dialog automatisch öffnen wenn Daten geladen
   useEffect(() => {
     if (data) {
       const timer = setTimeout(() => window.print(), 300);
       return () => clearTimeout(timer);
     }
-  }, [!!data]);
+  }, [data]);
 
   const revealLabel = (rule: any): string => {
     if (rule.alwaysVisible) return "Immer sichtbar";
     if (rule.manuallyTriggered) return "Manuell";
     let label = `Ab Folie ${rule.revealSlide}`;
-    if (rule.revealToSlide) label += `–${rule.revealToSlide}`;
-    if (rule.relockOnBack) label += " ↩";
+    if (rule.revealToSlide) label += `-${rule.revealToSlide}`;
+    if (rule.relockOnBack) label += " rücksperrend";
     return label;
   };
 
   if (!data) {
-    return <div className="p-8 text-gray-500">Lädt...</div>;
+    return <div className="p-8 text-stone-500">Lädt...</div>;
   }
 
   const blocks = [...data.blocks].sort((a, b) => a.order - b.order);
@@ -48,65 +47,53 @@ export default function HandoutPrintPage() {
       <style>{`
         @media print {
           .no-print { display: none !important; }
-          body { font-size: 11pt; }
+          body { background: white; }
           .handout-block { break-inside: avoid; page-break-inside: avoid; }
         }
       `}</style>
 
-      {/* Toolbar – wird nicht gedruckt */}
-      <div className="no-print sticky top-0 bg-gray-50 border-b border-gray-200 px-6 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link
-            href={`/dashboard/handout/${handoutId}`}
-            className="text-sm text-gray-500 hover:text-gray-700"
-          >
-            ← Zurück
-          </Link>
-          <span className="text-gray-300">|</span>
-          <span className="text-sm font-medium text-gray-700">Druckvorschau – alle Blöcke</span>
+      <div className="no-print border-b border-stone-200 bg-stone-50/95 px-6 py-4 backdrop-blur">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Link href={`/dashboard/handout/${handoutId}`} className="btn-secondary">
+              Zurück
+            </Link>
+            <div>
+              <div className="eyebrow">Druckansicht</div>
+              <div className="text-sm text-stone-600">Alle Blocks in Editor-Reihenfolge</div>
+            </div>
+          </div>
+          <button onClick={() => window.print()} className="btn-primary">
+            Drucken / Als PDF speichern
+          </button>
         </div>
-        <button
-          onClick={() => window.print()}
-          className="btn-primary text-sm"
-        >
-          Drucken / Als PDF speichern
-        </button>
       </div>
 
-      {/* Druckinhalt */}
-      <div className="max-w-2xl mx-auto px-6 py-8">
-        <div className="mb-8 pb-4 border-b border-gray-300">
-          <h1 className="text-2xl font-bold text-gray-900">{data.title}</h1>
-          {data.description && (
-            <p className="text-gray-600 mt-1">{data.description}</p>
-          )}
-          <p className="text-xs text-gray-400 mt-2 no-print">
-            {blocks.length} Blöcke · Reveal-Regeln sind als Badge sichtbar · Reihenfolge wie im Editor
+      <div className="mx-auto max-w-4xl px-6 py-10">
+        <header className="mb-8 border-b border-stone-200 pb-6">
+          <h1 className="text-5xl">{data.title}</h1>
+          {data.description && <p className="mt-3 max-w-2xl text-base text-stone-600">{data.description}</p>}
+          <p className="mt-4 text-xs uppercase tracking-[0.18em] text-stone-500 no-print">
+            {blocks.length} Blöcke · Reveal-Regeln als Badge sichtbar
           </p>
-        </div>
+        </header>
 
-        <div className="space-y-6">
+        <div className="space-y-8">
           {blocks.map((block, idx) => (
-            <div key={block._id} className="handout-block">
-              <div className="flex items-baseline gap-2 mb-2">
-                <span className="text-xs text-gray-400 no-print">#{idx + 1}</span>
-                <h2 className="text-base font-semibold text-gray-900">{block.title}</h2>
-                <span className="text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded px-1.5 py-0.5">
+            <article key={block._id} className="handout-block">
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                <span className="eyebrow no-print">Block {idx + 1}</span>
+                <span className="rounded-full border border-stone-900/10 bg-stone-100/70 px-3 py-1 text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-stone-700">
                   {revealLabel(block.revealRule)}
                 </span>
               </div>
-              <div className="prose prose-sm max-w-none markdown-content text-gray-700">
+              <h2 className="text-3xl">{block.title}</h2>
+              <div className="markdown-content mt-4">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{block.content}</ReactMarkdown>
               </div>
-              {idx < blocks.length - 1 && (
-                <hr className="mt-6 border-gray-200" />
-              )}
-            </div>
+              {idx < blocks.length - 1 && <hr className="mt-8 border-stone-200" />}
+            </article>
           ))}
-        </div>
-
-        <div className="mt-8 pt-4 border-t border-gray-200 text-xs text-gray-400 no-print">
-          Slide Handout · {new Date().toLocaleDateString("de-DE")}
         </div>
       </div>
     </div>

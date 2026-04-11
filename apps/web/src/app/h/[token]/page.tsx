@@ -7,7 +7,6 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { api } from "@convex/_generated/api";
 
-/** Stabile Viewer-ID für diese Browser-Session (nicht persistent über Tabs) */
 function getViewerId(): string {
   const key = "slide-handout-viewer-id";
   let id = sessionStorage.getItem(key);
@@ -26,7 +25,6 @@ export default function PublicHandoutPage() {
   const visibleBlocks = useQuery(api.sessions.getVisibleBlocksForPublic, { publicToken });
   const pingViewer = useMutation(api.viewers.pingViewer);
 
-  // Viewer-Heartbeat: beim Laden und danach alle 30s
   useEffect(() => {
     if (!sessionInfo || sessionInfo.status === "ended") return;
     const viewerId = getViewerId();
@@ -34,31 +32,26 @@ export default function PublicHandoutPage() {
     ping();
     const interval = setInterval(ping, 30_000);
     return () => clearInterval(interval);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [publicToken, sessionInfo?.status, pingViewer]);
 
-  // useRef instead of useState to avoid stale-closure bugs in Strict Mode:
-  // mutations to prevBlockIds are synchronous and don't trigger extra renders.
   const prevBlockIdsRef = useRef<Set<string>>(new Set());
   const [newBlockIds, setNewBlockIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!visibleBlocks) return;
 
-    const currentIds = new Set(visibleBlocks.map((b) => b.id));
+    const currentIds = new Set(visibleBlocks.map((block) => block.id));
     const freshIds = new Set<string>();
 
     currentIds.forEach((id) => {
       if (!prevBlockIdsRef.current.has(id)) freshIds.add(id);
     });
 
-    // Synchronously update the ref – no re-render, no stale closure
     prevBlockIdsRef.current = currentIds;
 
     if (freshIds.size === 0) return;
 
     setNewBlockIds(freshIds);
-    // Store timer id and clear on cleanup to avoid state updates after unmount
     const timer = setTimeout(() => setNewBlockIds(new Set()), 2000);
     return () => clearTimeout(timer);
   }, [visibleBlocks]);
@@ -67,10 +60,10 @@ export default function PublicHandoutPage() {
 
   if (sessionInfo === undefined || visibleBlocks === undefined) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-gray-500">Lade Handout...</p>
+      <div className="page-shell flex min-h-screen items-center justify-center py-10">
+        <div className="section-panel text-center">
+          <div className="eyebrow">Reader</div>
+          <p className="mt-4 text-base text-stone-600">Lade Handout...</p>
         </div>
       </div>
     );
@@ -78,12 +71,12 @@ export default function PublicHandoutPage() {
 
   if (!sessionInfo) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center max-w-md px-6">
-          <span className="text-4xl mb-4 block">🔍</span>
-          <h1 className="text-xl font-bold text-gray-900 mb-2">Handout nicht gefunden</h1>
-          <p className="text-gray-600">
-            Dieser Link ist ungültig oder die Session ist nicht mehr verfügbar.
+      <div className="page-shell flex min-h-screen items-center justify-center py-10">
+        <div className="section-panel max-w-xl text-center">
+          <div className="eyebrow">Nicht gefunden</div>
+          <h1 className="mt-3 text-5xl">Handout nicht verfügbar</h1>
+          <p className="page-copy mx-auto">
+            Dieser Link ist ungültig oder die Session ist nicht mehr erreichbar.
           </p>
         </div>
       </div>
@@ -91,21 +84,22 @@ export default function PublicHandoutPage() {
   }
 
   const statusInfo = {
-    draft: { color: "bg-yellow-100 text-yellow-800", label: "Noch nicht gestartet" },
-    live: { color: "bg-green-100 text-green-800", label: "Live" },
-    ended: { color: "bg-gray-100 text-gray-700", label: "Beendet" },
+    draft: { color: "border-amber-500/20 bg-amber-50/90 text-amber-800", label: "Noch nicht gestartet" },
+    live: { color: "border-emerald-500/20 bg-emerald-50/90 text-emerald-800", label: "Live" },
+    ended: { color: "border-stone-500/15 bg-stone-100/80 text-stone-700", label: "Beendet" },
   };
 
   const status = statusInfo[sessionInfo.status as keyof typeof statusInfo] ?? statusInfo.ended;
 
-  const footerText = {
-    live: "Live aktualisiert",
-    draft: "Entwurf – noch nicht gestartet",
-    ended: "Beendet",
-  }[sessionInfo.status] ?? "Slide Handout";
+  const footerText =
+    {
+      live: "Live aktualisiert",
+      draft: "Entwurf",
+      ended: "Beendet",
+    }[sessionInfo.status] ?? "Slide Handout";
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="pb-16 pt-6">
       <style>{`
         @media print {
           .no-print { display: none !important; }
@@ -114,79 +108,70 @@ export default function PublicHandoutPage() {
         }
       `}</style>
 
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10 no-print">
-        <div className="max-w-2xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+      <div className="page-shell">
+        <header className="page-hero no-print">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <h1 className="text-lg font-bold text-gray-900">{sessionInfo.handoutTitle}</h1>
+              <span className="kicker-pill">Public reader</span>
+              <h1 className="page-title mt-4 text-5xl">{sessionInfo.handoutTitle}</h1>
               {sessionInfo.handoutDescription && (
-                <p className="text-sm text-gray-500">{sessionInfo.handoutDescription}</p>
+                <p className="page-copy max-w-2xl">{sessionInfo.handoutDescription}</p>
               )}
             </div>
-            <div className="flex items-center gap-3">
-              <span className={`text-xs px-2 py-1 rounded-full font-medium ${status.color}`}>
+
+            <div className="flex flex-wrap gap-3">
+              <span className={`rounded-full border px-4 py-2 text-sm font-semibold ${status.color}`}>
                 {status.label}
               </span>
-              <button
-                onClick={handlePrint}
-                className="text-xs text-gray-500 hover:text-gray-700 border border-gray-300 px-3 py-1 rounded-lg transition-colors"
-              >
+              <button onClick={handlePrint} className="btn-secondary">
                 Drucken
               </button>
             </div>
           </div>
 
           {sessionInfo.status === "live" && (
-            <div className="flex items-center gap-2 mt-2">
-              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-              <span className="text-xs text-gray-500">
-                Folie {sessionInfo.currentSlide}
-                {sessionInfo.presentationTitle && ` · ${sessionInfo.presentationTitle}`}
-              </span>
+            <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-50/80 px-4 py-2 text-sm text-emerald-800">
+              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+              Folie {sessionInfo.currentSlide}
+              {sessionInfo.presentationTitle ? ` · ${sessionInfo.presentationTitle}` : ""}
             </div>
           )}
-        </div>
-      </header>
+        </header>
 
-      <main className="max-w-2xl mx-auto px-4 py-8">
-        {visibleBlocks.length === 0 ? (
-          <div className="text-center py-16">
-            <span className="text-4xl mb-4 block">⏳</span>
-            <h2 className="text-lg font-medium text-gray-900 mb-2">
-              Noch keine Inhalte freigegeben
-            </h2>
-            <p className="text-gray-600 text-sm">
-              {sessionInfo.status === "draft"
-                ? "Die Präsentation wurde noch nicht gestartet."
-                : "Inhalte werden im Verlauf der Präsentation freigeschaltet."}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {visibleBlocks.map((block) => {
+        <main className="mx-auto mt-8 max-w-4xl space-y-5">
+          {visibleBlocks.length === 0 ? (
+            <div className="empty-state">
+              <div className="eyebrow">Noch keine Freigabe</div>
+              <h2 className="mt-3 text-4xl">Inhalte erscheinen während des Vortrags.</h2>
+              <p className="page-copy mx-auto max-w-xl">
+                {sessionInfo.status === "draft"
+                  ? "Die Präsentation wurde noch nicht gestartet."
+                  : "Sobald neue Abschnitte freigegeben werden, erscheinen sie hier im Reader."}
+              </p>
+            </div>
+          ) : (
+            visibleBlocks.map((block) => {
               const isNew = newBlockIds.has(block.id);
               return (
-                <div
+                <article
                   key={block.id}
-                  className={`handout-block bg-white rounded-xl shadow-sm border border-gray-200 p-6 ${
-                    isNew ? "animate-slide-down ring-2 ring-blue-200" : ""
-                  }`}
+                  className={`handout-block card ${isNew ? "ring-2 ring-emerald-200" : ""}`}
                 >
-                  <h2 className="text-lg font-semibold text-gray-900 mb-3">{block.title}</h2>
-                  <div className="markdown-content text-gray-700">
+                  <div className="eyebrow">Reader block</div>
+                  <h2 className="mt-3 text-4xl">{block.title}</h2>
+                  <div className="markdown-content mt-5 text-base">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{block.content}</ReactMarkdown>
                   </div>
-                </div>
+                </article>
               );
-            })}
-          </div>
-        )}
-        <div className="h-16" />
-      </main>
+            })
+          )}
+        </main>
 
-      <footer className="text-center py-4 text-xs text-gray-400 no-print">
-        Slide Handout · {footerText}
-      </footer>
+        <footer className="no-print pt-8 text-center text-xs uppercase tracking-[0.18em] text-stone-500">
+          Slide Handout · {footerText}
+        </footer>
+      </div>
     </div>
   );
 }

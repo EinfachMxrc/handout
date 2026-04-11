@@ -43,8 +43,8 @@ export function SlideControls({
   const handleJump = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token || disabled || !jumpInput) return;
-    const slide = parseInt(jumpInput);
-    if (isNaN(slide) || slide < 1) return;
+    const slide = parseInt(jumpInput, 10);
+    if (Number.isNaN(slide) || slide < 1) return;
     await handleAction(() =>
       jumpToSlide({ token, sessionId: sessionId as Id<"presentationSessions">, slideNumber: slide })
     );
@@ -53,37 +53,61 @@ export function SlideControls({
 
   const syncModeLabel: Record<string, string> = {
     auto: "Auto-Sync",
-    hybrid: "Hybrid-Modus",
+    hybrid: "Hybrid",
     manual: "Manuell",
   };
 
   const syncModeColor: Record<string, string> = {
-    auto: "bg-green-100 text-green-800",
-    hybrid: "bg-yellow-100 text-yellow-800",
-    manual: "bg-gray-100 text-gray-700",
+    auto: "border-emerald-500/20 bg-emerald-50/90 text-emerald-800",
+    hybrid: "border-amber-500/20 bg-amber-50/90 text-amber-800",
+    manual: "border-stone-500/15 bg-stone-100/80 text-stone-700",
   };
 
   return (
-    <div className="space-y-4">
-      {/* Current slide indicator */}
-      <div className="flex items-center justify-between">
-        <div className="text-center">
-          <div className="text-3xl font-bold text-gray-900">{currentSlide}</div>
-          {totalSlides && (
-            <div className="text-sm text-gray-500">von {totalSlides}</div>
-          )}
-          <div className="text-xs text-gray-400 mt-1">Aktuelle Folie</div>
+    <div className="space-y-5">
+      <div className="grid gap-4 sm:grid-cols-[0.9fr_1.1fr]">
+        <div className="rounded-[24px] border border-stone-900/8 bg-white/75 p-5 text-center">
+          <div className="metric-label">Aktuelle Folie</div>
+          <div className="mt-3 text-6xl leading-none text-stone-900">{currentSlide}</div>
+          <div className="mt-2 text-sm text-stone-500">
+            {totalSlides ? `von ${totalSlides}` : "Gesamtzahl offen"}
+          </div>
         </div>
 
-        <div className="flex flex-col items-end gap-2">
-          <span className={`px-2 py-1 rounded text-xs font-medium ${syncModeColor[syncMode] ?? "bg-gray-100"}`}>
-            {syncModeLabel[syncMode] ?? syncMode}
-          </span>
+        <div className="rounded-[24px] border border-stone-900/8 bg-white/65 p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="metric-label">Synchronisation</div>
+              <div className="mt-2 text-base font-semibold text-stone-900">
+                {syncModeLabel[syncMode] ?? syncMode}
+              </div>
+            </div>
+            <span
+              className={`rounded-full border px-3 py-1 text-[0.72rem] font-semibold uppercase tracking-[0.16em] ${syncModeColor[syncMode] ?? syncModeColor.manual}`}
+            >
+              {syncModeLabel[syncMode] ?? syncMode}
+            </span>
+          </div>
+
+          <form onSubmit={handleJump} className="mt-5 flex gap-2">
+            <input
+              type="number"
+              className="input flex-1"
+              value={jumpInput}
+              onChange={(e) => setJumpInput(e.target.value)}
+              placeholder="Folie direkt setzen"
+              min={1}
+              max={totalSlides}
+              disabled={disabled}
+            />
+            <button type="submit" className="btn-secondary px-4" disabled={disabled || isLoading}>
+              Springen
+            </button>
+          </form>
         </div>
       </div>
 
-      {/* Prev / Next buttons */}
-      <div className="flex gap-2">
+      <div className="flex gap-3">
         <button
           className="btn-secondary flex-1"
           onClick={() =>
@@ -93,7 +117,7 @@ export function SlideControls({
           }
           disabled={disabled || isLoading || currentSlide <= 1}
         >
-          ← Zurück
+          Zurück
         </button>
         <button
           className="btn-primary flex-1"
@@ -104,39 +128,19 @@ export function SlideControls({
           }
           disabled={disabled || isLoading || (totalSlides !== undefined && currentSlide >= totalSlides)}
         >
-          Weiter →
+          Weiter
         </button>
       </div>
 
-      {/* Jump to slide */}
-      <form onSubmit={handleJump} className="flex gap-2">
-        <input
-          type="number"
-          className="input flex-1"
-          value={jumpInput}
-          onChange={(e) => setJumpInput(e.target.value)}
-          placeholder="Folie Nr."
-          min={1}
-          max={totalSlides}
-          disabled={disabled}
-        />
-        <button type="submit" className="btn-secondary px-4" disabled={disabled || isLoading}>
-          Springen
-        </button>
-      </form>
-
-      {/* Sync mode switcher */}
-      <div className="border-t pt-3">
-        <label className="text-xs font-medium text-gray-500 mb-2 block">Sync-Modus</label>
-        <div className="flex gap-2">
+      <div>
+        <label className="label">Sync-Modus</label>
+        <div className="segmented-shell">
           {(["auto", "hybrid", "manual"] as const).map((mode) => (
             <button
               key={mode}
-              className={`flex-1 px-2 py-1 text-xs rounded border transition-colors ${
-                syncMode === mode
-                  ? "bg-blue-600 text-white border-blue-600"
-                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-              }`}
+              type="button"
+              className="segmented-button"
+              data-active={syncMode === mode}
               onClick={() =>
                 token &&
                 !disabled &&

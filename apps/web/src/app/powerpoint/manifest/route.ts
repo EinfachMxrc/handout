@@ -23,7 +23,7 @@ function createManifestXml(baseUrl: string) {
   <ProviderName>Slide Handout</ProviderName>
   <DefaultLocale>de-DE</DefaultLocale>
   <DisplayName DefaultValue="Slide Handout"/>
-  <Description DefaultValue="Live-Handout fuer Praesentationen - Inhalte schalten sich folienweise frei."/>
+  <Description DefaultValue="Live-Handout für Präsentationen - Inhalte schalten sich folienweise frei."/>
   <IconUrl DefaultValue="${baseUrl}/powerpoint/icon-32.png"/>
   <HighResolutionIconUrl DefaultValue="${baseUrl}/powerpoint/icon-64.png"/>
   <SupportUrl DefaultValue="${baseUrl}/powerpoint"/>
@@ -95,7 +95,7 @@ function createManifestXml(baseUrl: string) {
       </bt:ShortStrings>
       <bt:LongStrings>
         <bt:String id="GetStarted.Description" DefaultValue="Verbinden Sie PowerPoint direkt mit Ihrer Live-Session."/>
-        <bt:String id="TaskpaneButton.Tooltip" DefaultValue="Oeffnet die Slide-Handout-Steuerung"/>
+        <bt:String id="TaskpaneButton.Tooltip" DefaultValue="Öffnet die Slide-Handout-Steuerung"/>
       </bt:LongStrings>
     </Resources>
   </VersionOverrides>
