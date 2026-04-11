@@ -17,6 +17,7 @@ export interface OfficeBridgeCallbacks {
 let isInitialized = false;
 let activeCallbacks: OfficeBridgeCallbacks | null = null;
 let lastReportedSlide: number | null = null;
+let currentView: "edit" | "read" = "edit";
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 let windowBlurListener: (() => void) | null = null;
 let windowFocusListener: (() => void) | null = null;
@@ -80,13 +81,14 @@ export function initOfficeBridge(
               return;
             }
             callbacks.onModeChange("auto");
+            // Also listen for view changes (edit ↔ slideshow)
             try {
               Office.context.document.addHandlerAsync(
                 Office.EventType.ActiveViewChanged,
-                handleSelectionChanged
+                handleActiveViewChanged
               );
             } catch {
-              // optional
+              // optional — not all environments support it
             }
             resolve("auto");
           }
@@ -99,8 +101,17 @@ export function initOfficeBridge(
   });
 }
 
-// No debounce — call immediately while slide is still the active selection
 function handleSelectionChanged() {
+  void syncCurrentSlide();
+}
+
+function handleActiveViewChanged(args: { activeView: string }) {
+  const newView = (args?.activeView ?? "edit") === "read" ? "read" : "edit";
+  if (newView !== currentView) {
+    currentView = newView;
+    // Force a fresh report when switching between edit and slideshow
+    lastReportedSlide = null;
+  }
   void syncCurrentSlide();
 }
 
@@ -143,15 +154,19 @@ function teardownWindowListeners() {
 }
 
 /**
- * Get current slide info.
+ * Strategy depends on the current view:
  *
- * Current slide  → getSelectedDataAsync(SlideRange)
- *   index is 1-based in Office.js — use it directly (no +1).
- *   Works in Online always; works in Desktop when slide has focus.
- *   Desktop fallback: PowerPoint.run + getSelectedSlides (focus-independent).
+ * EDIT mode:
+ *   → getSelectedDataAsync(SlideRange) — index is 1-based, use directly.
+ *     Works in Online always; works in Desktop when slide has focus.
+ *   → Desktop fallback: PowerPoint.run + getSelectedSlides (focus-independent).
  *
- * Total slides → PowerPoint.run().slides.items.length (reliable everywhere).
- *   Fallback: getSlideCountAsync.
+ * READ mode (Bildschirmpräsentation / Slideshow):
+ *   → getSelectedDataAsync fails (no selection concept in slideshow).
+ *   → PowerPoint.run + getSelectedSlides — in slideshow mode this correctly
+ *     returns the slide currently being presented (works Online + Desktop).
+ *
+ * Total slides: PowerPoint.run().slides.items.length (reliable everywhere).
  */
 export function getCurrentSlideInfo(): Promise<OfficeSlideInfo | null> {
   return new Promise((resolve) => {
@@ -165,6 +180,18 @@ export function getCurrentSlideInfo(): Promise<OfficeSlideInfo | null> {
       rawTitle.split(/[/\\]/).pop()?.replace(/\.pptx?$/i, "") ??
       "Praesentation";
 
+    // In slideshow (read) mode getSelectedDataAsync has no selection to read.
+    // Use PowerPoint.run + getSelectedSlides which tracks the presented slide.
+    if (currentView === "read") {
+      if (isPowerPointApiAvailable()) {
+        powerPointRunGetSlide(presentationTitle, resolve);
+      } else {
+        resolve(null);
+      }
+      return;
+    }
+
+    // Edit mode: getSelectedDataAsync is the primary approach.
     try {
       Office.context.document.getSelectedDataAsync(
         Office.CoercionType.SlideRange,
@@ -179,8 +206,9 @@ export function getCurrentSlideInfo(): Promise<OfficeSlideInfo | null> {
             !slides ||
             slides.length === 0
           ) {
-            // getSelectedDataAsync failed (Desktop taskpane-focus issue).
-            // Try PowerPoint.run as Desktop-only fallback.
+            // Failed — Desktop taskpane-focus issue.
+            // Fall back to PowerPoint.run (Desktop only; skip in Online edit
+            // mode because getSelectedSlides returns wrong data there).
             if (!isOnline() && isPowerPointApiAvailable()) {
               powerPointRunGetSlide(presentationTitle, resolve);
             } else {
@@ -191,7 +219,6 @@ export function getCurrentSlideInfo(): Promise<OfficeSlideInfo | null> {
 
           // index is 1-based in Office.js — use directly, no +1
           const slideNumber = slides[0].index;
-
           fetchTotalSlides(presentationTitle, slideNumber, resolve);
         }
       );
@@ -201,11 +228,6 @@ export function getCurrentSlideInfo(): Promise<OfficeSlideInfo | null> {
   });
 }
 
-/**
- * Fetch total slide count.
- * Prefers PowerPoint.run (works in Online + Desktop, no focus dependency).
- * Falls back to getSlideCountAsync for environments without the JS API.
- */
 function fetchTotalSlides(
   presentationTitle: string,
   slideNumber: number,
@@ -247,7 +269,12 @@ function legacySlideCount(
   }
 }
 
-/** Desktop-only fallback via PowerPoint JS API. */
+/**
+ * PowerPoint JS API fallback.
+ * In slideshow (read) mode: getSelectedSlides returns the currently
+ * presented slide — works correctly in both Online and Desktop.
+ * In edit mode: only used as Desktop fallback when getSelectedDataAsync fails.
+ */
 function powerPointRunGetSlide(
   presentationTitle: string,
   resolve: (v: OfficeSlideInfo | null) => void
@@ -301,7 +328,7 @@ export function destroyOfficeBridge() {
       );
       Office.context.document.removeHandlerAsync(
         Office.EventType.ActiveViewChanged,
-        { handler: handleSelectionChanged }
+        { handler: handleActiveViewChanged }
       );
     } catch {
       // ignore
@@ -311,4 +338,5 @@ export function destroyOfficeBridge() {
   isInitialized = false;
   activeCallbacks = null;
   lastReportedSlide = null;
+  currentView = "edit";
 }
