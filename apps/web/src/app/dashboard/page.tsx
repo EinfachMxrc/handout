@@ -208,7 +208,7 @@ export default function DashboardPage() {
                   <button className="btn-primary" onClick={() => router.push(`/dashboard/session/${s._id}`)}>
                     Öffnen
                   </button>
-                  <a href={`/h/${s.publicToken}`} target="_blank" className="btn-secondary">Handout</a>
+                  <a href={`/h/${s.publicToken}`} target="_blank" rel="noopener noreferrer" className="btn-secondary">Handout</a>
                   <button className="btn-danger" disabled={isDemo}
                     onClick={() => confirm("Session löschen?") && token &&
                       deleteSession({ token, sessionId: s._id as Id<"presentationSessions"> })}>

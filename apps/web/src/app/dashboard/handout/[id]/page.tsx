@@ -96,6 +96,7 @@ function DraggableBlock({
             onClick={() => onMoveBlock(block._id, "up")}
             disabled={isReadonly || index === 0}
             title="Nach oben"
+            aria-label="Block nach oben verschieben"
           >
             ^
           </button>
@@ -105,6 +106,7 @@ function DraggableBlock({
             onClick={() => onMoveBlock(block._id, "down")}
             disabled={isReadonly || index === totalBlocks - 1}
             title="Nach unten"
+            aria-label="Block nach unten verschieben"
           >
             v
           </button>

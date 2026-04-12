@@ -11,7 +11,7 @@ const config: Config = {
           strong: "#4F46E5",
           soft: "#E0E7FF",
         },
-        accent: {
+        emerald: {
           DEFAULT: "#10B981",
           strong: "#059669",
           soft: "#D1FAE5",

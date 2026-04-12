@@ -37,10 +37,10 @@ export function Modal({ isOpen, onClose, title, children, size = "md" }: ModalPr
       <div
         className={`relative w-full overflow-hidden ${sizeClasses[size]} max-h-[90vh] overflow-y-auto`}
         style={{
-          borderRadius: "var(--radius-card)",
+          borderRadius: "0.75rem",
           border: "1px solid var(--line-strong)",
           background: "var(--paper-strong)",
-          boxShadow: "var(--shadow-strong)",
+          boxShadow: "var(--shadow-lg)",
         }}
         onClick={(e) => e.stopPropagation()}
       >
