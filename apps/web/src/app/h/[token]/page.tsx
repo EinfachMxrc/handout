@@ -99,7 +99,7 @@ export default function PublicHandoutPage() {
     }[sessionInfo.status] ?? "Slide Handout";
 
   return (
-    <div className="pb-16 pt-6">
+    <div className="handout-reader pb-16 pt-6">
       <style>{`
         @media print {
           .no-print { display: none !important; }
@@ -150,15 +150,23 @@ export default function PublicHandoutPage() {
               </p>
             </div>
           ) : (
-            visibleBlocks.map((block) => {
+            visibleBlocks.map((block, idx) => {
               const isNew = newBlockIds.has(block.id);
               return (
                 <article
                   key={block.id}
                   className={`handout-block card ${isNew ? "ring-2 ring-emerald-300 dark:ring-emerald-500" : ""}`}
                 >
-                  <div className="eyebrow">Abschnitt</div>
-                  <h2 className="mt-3 text-4xl">{block.title}</h2>
+                  <div className="flex items-center gap-3">
+                    <span
+                      className="block-number flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold text-white"
+                      style={{ background: "var(--accent)" }}
+                    >
+                      {String(idx + 1).padStart(2, "0")}
+                    </span>
+                    <span className="eyebrow">Abschnitt</span>
+                  </div>
+                  <h2 className="mt-3 text-3xl font-bold sm:text-4xl">{block.title}</h2>
                   <div className="markdown-content mt-5 text-base">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{block.content}</ReactMarkdown>
                   </div>
