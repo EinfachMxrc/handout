@@ -147,6 +147,23 @@ export const deleteHandout = mutation({
   },
 });
 
+// ---- IMAGE HELPERS ----
+
+export const generateUploadUrl = mutation({
+  args: { token: v.string() },
+  handler: async (ctx, args) => {
+    await requirePresenter(ctx, args.token);
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+export const getImageUrl = query({
+  args: { storageId: v.id("_storage") },
+  handler: async (ctx, args) => {
+    return await ctx.storage.getUrl(args.storageId);
+  },
+});
+
 // ---- BLOCK MUTATIONS ----
 
 export const createBlock = mutation({
@@ -156,6 +173,11 @@ export const createBlock = mutation({
     title: v.string(),
     content: v.string(),
     revealRule: revealRuleArg,
+    imageId: v.optional(v.id("_storage")),
+    imagePosition: v.optional(v.string()),
+    imageCaption: v.optional(v.string()),
+    fontSize: v.optional(v.string()),
+    layout: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const presenter = await requirePresenter(ctx, args.token);
@@ -179,6 +201,11 @@ export const createBlock = mutation({
       content: args.content,
       order: maxOrder + 1,
       revealRule: args.revealRule,
+      imageId: args.imageId,
+      imagePosition: args.imagePosition,
+      imageCaption: args.imageCaption,
+      fontSize: args.fontSize,
+      layout: args.layout,
       createdAt: now,
       updatedAt: now,
     });
@@ -192,6 +219,12 @@ export const updateBlock = mutation({
     title: v.optional(v.string()),
     content: v.optional(v.string()),
     revealRule: v.optional(revealRuleArg),
+    imageId: v.optional(v.id("_storage")),
+    removeImage: v.optional(v.boolean()),
+    imagePosition: v.optional(v.string()),
+    imageCaption: v.optional(v.string()),
+    fontSize: v.optional(v.string()),
+    layout: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const presenter = await requirePresenter(ctx, args.token);
@@ -208,6 +241,17 @@ export const updateBlock = mutation({
     if (args.title !== undefined) updates.title = args.title;
     if (args.content !== undefined) updates.content = args.content;
     if (args.revealRule !== undefined) updates.revealRule = args.revealRule;
+    if (args.removeImage) {
+      updates.imageId = undefined;
+      updates.imageCaption = undefined;
+      updates.imagePosition = undefined;
+    } else if (args.imageId !== undefined) {
+      updates.imageId = args.imageId;
+    }
+    if (args.imagePosition !== undefined) updates.imagePosition = args.imagePosition;
+    if (args.imageCaption !== undefined) updates.imageCaption = args.imageCaption;
+    if (args.fontSize !== undefined) updates.fontSize = args.fontSize;
+    if (args.layout !== undefined) updates.layout = args.layout;
 
     await ctx.db.patch(args.blockId, updates as any);
   },
@@ -227,6 +271,38 @@ export const deleteBlock = mutation({
     }
 
     await ctx.db.delete(args.blockId);
+  },
+});
+
+export const setPdfFile = mutation({
+  args: {
+    token: v.string(),
+    handoutId: v.id("handouts"),
+    pdfFileId: v.optional(v.id("_storage")),
+  },
+  handler: async (ctx, args) => {
+    const presenter = await requirePresenter(ctx, args.token);
+    assertNotDemo(presenter);
+    const handout = await ctx.db.get(args.handoutId);
+    if (!handout || handout.presenterId !== presenter._id) throw new Error("Nicht gefunden");
+    await ctx.db.patch(args.handoutId, {
+      pdfFileId: args.pdfFileId,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+export const removePdfFile = mutation({
+  args: { token: v.string(), handoutId: v.id("handouts") },
+  handler: async (ctx, args) => {
+    const presenter = await requirePresenter(ctx, args.token);
+    assertNotDemo(presenter);
+    const handout = await ctx.db.get(args.handoutId);
+    if (!handout || handout.presenterId !== presenter._id) throw new Error("Nicht gefunden");
+    if (handout.pdfFileId) {
+      await ctx.storage.delete(handout.pdfFileId);
+    }
+    await ctx.db.patch(args.handoutId, { pdfFileId: undefined, updatedAt: Date.now() });
   },
 });
 

@@ -121,6 +121,8 @@ export const getPublicSession = query({
     const handout = await ctx.db.get(session.handoutId);
     if (!handout) return null;
 
+    const pdfUrl = handout.pdfFileId ? await ctx.storage.getUrl(handout.pdfFileId) : null;
+
     return {
       sessionId: session._id,
       handoutTitle: handout.title,
@@ -129,6 +131,7 @@ export const getPublicSession = query({
       currentSlide: session.currentSlide,
       syncMode: session.syncMode,
       presentationTitle: session.presentationTitle,
+      pdfUrl,
     };
   },
 });
@@ -156,14 +159,23 @@ export const getVisibleBlocksForPublic = query({
     const visibleBlocks = blocks.filter((block) => isBlockVisible(block, session));
 
     // Return ONLY safe public data – no reveal rules exposed
-    return visibleBlocks
-      .sort((a, b) => a.order - b.order)
-      .map((block) => ({
-        id: block._id,
-        title: block.title,
-        content: block.content,
-        order: block.order,
-      }));
+    const blocksWithImages = await Promise.all(
+      visibleBlocks
+        .sort((a, b) => a.order - b.order)
+        .map(async (block) => ({
+          id: block._id,
+          title: block.title,
+          content: block.content,
+          order: block.order,
+          imageUrl: block.imageId ? await ctx.storage.getUrl(block.imageId) : null,
+          imagePosition: block.imagePosition,
+          imageCaption: block.imageCaption,
+          fontSize: block.fontSize,
+          layout: block.layout,
+        }))
+    );
+
+    return blocksWithImages;
   },
 });
 

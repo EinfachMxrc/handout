@@ -12,6 +12,7 @@ export default function DemoLoginPage() {
   const { setAuth, token } = useAuthStore();
   const router = useRouter();
   const [error, setError] = useState("");
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     // Already logged in as demo? Go straight to dashboard
@@ -28,22 +29,38 @@ export default function DemoLoginPage() {
         if (cancelled) return;
         setAuth(result.token, result.name ?? undefined, result.email, result.isDemo ?? false);
         router.replace("/dashboard");
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (cancelled) return;
-        setError(err.message ?? "Demo-Login fehlgeschlagen");
+        const message =
+          err instanceof Error ? err.message : "Demo-Login fehlgeschlagen";
+        // Strip Convex internal prefixes for a cleaner user-facing message
+        setError(
+          message.includes("Ungueltige Anmeldedaten")
+            ? "Demo-Login fehlgeschlagen. Bitte versuchen Sie es erneut."
+            : message.replace(/^\[.*?\]\s*/g, "")
+        );
       }
     }
 
     autoLogin();
     return () => { cancelled = true; };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [attempt]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (error) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center space-y-4">
+          <p className="text-lg font-semibold">Demo-Login fehlgeschlagen</p>
           <p className="text-sm" style={{ color: "var(--danger)" }}>{error}</p>
-          <a href="/auth/login" className="btn-secondary">Zur Anmeldeseite</a>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={() => { setError(""); setAttempt((a) => a + 1); }}
+              className="btn-primary"
+            >
+              Erneut versuchen
+            </button>
+            <a href="/auth/login" className="btn-secondary">Zur Anmeldeseite</a>
+          </div>
         </div>
       </div>
     );

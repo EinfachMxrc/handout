@@ -8,6 +8,7 @@ import type { Doc } from "./_generated/dataModel";
 import { mutation, query, type MutationCtx } from "./_generated/server";
 import { ConvexError, v } from "convex/values";
 import {
+  DEMO_EMAIL,
   DEMO_PASSWORD,
   generateToken,
   isDemoPresenter,
@@ -92,6 +93,19 @@ export const login = mutation({
       .query("presenters")
       .withIndex("by_email", (q) => q.eq("email", args.email))
       .first();
+
+    // Auto-create demo account on first login attempt
+    if (!presenter && args.email === DEMO_EMAIL && args.password === DEMO_PASSWORD) {
+      const passwordHash = await sha256v2Hash(DEMO_PASSWORD);
+      const presenterId = await ctx.db.insert("presenters", {
+        email: DEMO_EMAIL,
+        passwordHash,
+        name: "Demo Presenter",
+        createdAt: Date.now(),
+        isDemo: true,
+      });
+      presenter = await ctx.db.get(presenterId);
+    }
 
     if (!presenter) {
       throw new ConvexError("Ungueltige Anmeldedaten");
