@@ -47,7 +47,7 @@ export default function DashboardPage() {
   // Prune selectedSessions whenever sessions changes (e.g. after per-row delete or refetch)
   useEffect(() => {
     if (!sessions) return;
-    const currentIds = new Set(sessions.map((s) => s._id));
+    const currentIds = new Set<string>(sessions.map((s) => s._id));
     setSelectedSessions((prev) => {
       const pruned = new Set<string>();
       prev.forEach((id) => { if (currentIds.has(id)) pruned.add(id); });
