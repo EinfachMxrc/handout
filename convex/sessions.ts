@@ -260,6 +260,44 @@ export const deleteSession = mutation({
   },
 });
 
+export const deleteSessions = mutation({
+  args: {
+    token: v.string(),
+    sessionIds: v.array(v.id("presentationSessions")),
+  },
+  handler: async (ctx, args) => {
+    const presenter = await requirePresenter(ctx, args.token);
+    assertNotDemo(presenter);
+    for (const sessionId of args.sessionIds) {
+      const session = await ctx.db.get(sessionId);
+      if (!session || session.presenterId !== presenter._id) continue;
+      await ctx.db.delete(sessionId);
+    }
+  },
+});
+
+export const reopenSession = mutation({
+  args: {
+    token: v.string(),
+    sessionId: v.id("presentationSessions"),
+  },
+  handler: async (ctx, args) => {
+    const presenter = await requirePresenter(ctx, args.token);
+    assertNotDemo(presenter);
+    const session = await ctx.db.get(args.sessionId);
+    if (!session || session.presenterId !== presenter._id) {
+      throw new Error("Session nicht gefunden");
+    }
+    if (session.status !== "ended") {
+      throw new Error("Nur beendete Sessions können wieder geöffnet werden");
+    }
+    await ctx.db.patch(args.sessionId, {
+      status: "live",
+      updatedAt: Date.now(),
+    });
+  },
+});
+
 // ---- Slide control ----
 
 export const setCurrentSlide = mutation({
