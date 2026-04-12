@@ -294,6 +294,8 @@ export const reopenSession = mutation({
     await ctx.db.patch(args.sessionId, {
       status: "live",
       updatedAt: Date.now(),
+      startedAt: Date.now(),
+      endedAt: undefined,
     });
   },
 });

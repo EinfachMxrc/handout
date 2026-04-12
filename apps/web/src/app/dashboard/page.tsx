@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
 import { api } from "@convex/_generated/api";
@@ -42,6 +42,17 @@ export default function DashboardPage() {
     setSelectedSessions((prev) =>
       prev.size === sessions.length ? new Set() : new Set(sessions.map((s) => s._id))
     );
+  }, [sessions]);
+
+  // Prune selectedSessions whenever sessions changes (e.g. after per-row delete or refetch)
+  useEffect(() => {
+    if (!sessions) return;
+    const currentIds = new Set(sessions.map((s) => s._id));
+    setSelectedSessions((prev) => {
+      const pruned = new Set<string>();
+      prev.forEach((id) => { if (currentIds.has(id)) pruned.add(id); });
+      return pruned;
+    });
   }, [sessions]);
 
   const handleBulkDelete = async () => {
@@ -252,6 +263,7 @@ export default function DashboardPage() {
                     className="h-4 w-4 flex-shrink-0"
                     checked={selectedSessions.has(s._id)}
                     onChange={() => toggleSession(s._id)}
+                    aria-label={`Session ${s.publicToken} auswählen`}
                   />
                   {statusBadge(s.status)}
                   <div>

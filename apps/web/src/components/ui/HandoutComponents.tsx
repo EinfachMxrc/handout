@@ -17,7 +17,7 @@ import type { ReactNode } from "react";
  *   <div class="stat">num</div>   → large stat number
  */
 
-function extractMeta(className?: string): { lang: string; variant: "default" | "unsafe" | "safe"; title?: string } {
+function extractMeta(className?: string): { lang: string; variant: "default" | "unsafe" | "safe" } {
   if (!className) return { lang: "", variant: "default" };
 
   const langMatch = className.match(/language-(\S+)/);
@@ -43,7 +43,9 @@ export const handoutComponents: Partial<Components> = {
     const { lang, variant } = extractMeta(codeChild.className);
     const text = typeof codeChild.children === "string"
       ? codeChild.children.replace(/\n$/, "")
-      : String(codeChild.children ?? "");
+      : Array.isArray(codeChild.children)
+        ? codeChild.children.filter((c: unknown) => typeof c === "string").join("").replace(/\n$/, "")
+        : String(codeChild.children ?? "");
 
     // Extract title from the code fence meta (e.g., ```python title=app.py)
     // react-markdown doesn't pass meta directly, so we parse from data attributes

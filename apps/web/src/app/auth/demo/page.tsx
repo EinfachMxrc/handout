@@ -5,6 +5,7 @@ import { useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
 import { api } from "@convex/_generated/api";
 import { useAuthStore } from "@/store/authStore";
+import { DEMO_EMAIL, DEMO_PASSWORD } from "@convex/_utils";
 
 export default function DemoLoginPage() {
   const login = useMutation(api.auth.login);
@@ -23,7 +24,7 @@ export default function DemoLoginPage() {
 
     async function autoLogin() {
       try {
-        const result = await login({ email: "demo@example.com", password: "demo1234" });
+        const result = await login({ email: DEMO_EMAIL, password: DEMO_PASSWORD });
         if (cancelled) return;
         setAuth(result.token, result.name ?? undefined, result.email, result.isDemo ?? false);
         router.replace("/dashboard");

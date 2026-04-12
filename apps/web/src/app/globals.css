@@ -286,6 +286,7 @@
 }
 .markdown-content pre {
   @apply relative mb-5 overflow-x-auto rounded-xl text-sm leading-relaxed;
+
   background: #1E2A38;
   color: #F2F2F7;
   padding: 2.5rem 1.25rem 1.25rem;
@@ -304,17 +305,20 @@
 .dark .markdown-content pre { background: #0F1923; }
 .markdown-content pre code {
   @apply bg-transparent p-0 font-normal;
+
   color: inherit;
   font-family: "SF Mono", "Fira Code", "JetBrains Mono", ui-monospace, monospace;
 }
 .markdown-content table { @apply mb-5 w-full border-collapse overflow-hidden rounded-lg; }
 .markdown-content th {
   @apply px-4 py-2.5 text-left text-sm font-semibold;
+
   background: var(--paper-alt);
   border-bottom: 2px solid var(--line);
 }
 .markdown-content td {
   @apply px-4 py-2.5 text-sm;
+
   border-bottom: 1px solid var(--line);
   color: var(--ink-soft);
 }
@@ -322,6 +326,7 @@
 .markdown-content a { color: var(--accent-text); text-decoration: underline; }
 .markdown-content hr {
   @apply my-6;
+
   border: none;
   height: 2px;
   background: #E8998D;
@@ -330,6 +335,7 @@
 /* ── Terminal Window ───────────────────────────── */
 .terminal-window {
   @apply relative overflow-hidden rounded-xl;
+
   background: #1E2A38;
   border: 1px solid rgba(255,255,255,0.06);
   font-family: "SF Mono", "Fira Code", "JetBrains Mono", "Cascadia Code", ui-monospace, monospace;
@@ -339,11 +345,13 @@
 }
 .terminal-titlebar {
   @apply flex items-center gap-3 px-4 py-2.5;
+
   border-bottom: 1px solid rgba(255,255,255,0.06);
 }
 .terminal-dots { @apply flex items-center gap-1.5; }
 .terminal-dot {
   @apply block h-[0.6rem] w-[0.6rem] rounded-full;
+
   position: relative;
   transition: transform 0.15s ease, filter 0.15s ease;
 }
@@ -352,10 +360,12 @@
 .terminal-dot-green { background: #28C840; }
 .terminal-title {
   @apply text-xs;
+
   color: rgba(255,255,255,0.4);
 }
 .terminal-body {
   @apply overflow-x-auto p-4 text-sm leading-relaxed;
+
   background: transparent !important;
   color: #F2F2F7;
   margin: 0;
@@ -365,11 +375,13 @@
 .terminal-body::before { display: none; }
 .terminal-body code {
   @apply bg-transparent p-0;
+
   color: inherit;
   font-family: inherit;
 }
 .terminal-cursor {
   @apply inline-block;
+
   color: #5AC8FA;
   animation: cursor-blink 0.8s steps(2) infinite;
 }

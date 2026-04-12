@@ -25,10 +25,11 @@ export function Terminal({ children, title, variant = "default", speed = 18, fla
 
   // Start animation when element enters viewport
   useEffect(() => {
+    if (started) return; // Already started, no need to observe
     const el = ref.current;
     if (!el) return;
     const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting && !started) setStarted(true); },
+      ([entry]) => { if (entry.isIntersecting) setStarted(true); },
       { threshold: 0.15 }
     );
     observer.observe(el);
@@ -38,6 +39,7 @@ export function Terminal({ children, title, variant = "default", speed = 18, fla
   // Typing animation
   useEffect(() => {
     if (!started) return;
+    setDone(false); // Reset done state so cursor shows active typing on re-animation
     const text = children;
     let i = 0;
     const timer = setInterval(() => {

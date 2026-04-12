@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
+import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import { api } from "@convex/_generated/api";
 import { handoutComponents } from "@/components/ui/HandoutComponents";
 import { TerminalFlashContext } from "@/components/ui/Terminal";
@@ -42,8 +43,9 @@ export default function PublicHandoutPage() {
   const [flashBlockIds, setFlashBlockIds] = useState<Set<string>>(new Set());
   const wasHiddenRef = useRef(false);
 
-  // Track whether the tab was in the background
+  // Track whether the tab was in the background; seed with actual initial state
   useEffect(() => {
+    wasHiddenRef.current = document.hidden; // capture initial visibility state
     const onVisibility = () => { wasHiddenRef.current = document.hidden; };
     document.addEventListener("visibilitychange", onVisibility);
     return () => document.removeEventListener("visibilitychange", onVisibility);
@@ -66,13 +68,17 @@ export default function PublicHandoutPage() {
     setNewBlockIds(freshIds);
 
     // Flash terminals if the tab was hidden when the update came in
+    let flashTimer: ReturnType<typeof setTimeout> | undefined;
     if (wasHiddenRef.current) {
       setFlashBlockIds(freshIds);
-      setTimeout(() => setFlashBlockIds(new Set()), 3500);
+      flashTimer = setTimeout(() => setFlashBlockIds(new Set()), 3500);
     }
 
     const timer = setTimeout(() => setNewBlockIds(new Set()), 2000);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      if (flashTimer) clearTimeout(flashTimer);
+    };
   }, [visibleBlocks]);
 
   const handlePrint = () => window.print();
@@ -191,7 +197,20 @@ export default function PublicHandoutPage() {
                     <TerminalFlashContext.Provider value={shouldFlash}>
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
-                        rehypePlugins={[rehypeRaw]}
+                        rehypePlugins={[
+                          rehypeRaw,
+                          // Sanitize HTML after rehype-raw to prevent stored XSS.
+                          // Allow class attributes on div/span/p for grid-2/stat layouts.
+                          [rehypeSanitize, {
+                            ...defaultSchema,
+                            attributes: {
+                              ...defaultSchema.attributes,
+                              div: [...(defaultSchema.attributes?.div ?? []), "className", "class"],
+                              span: [...(defaultSchema.attributes?.span ?? []), "className", "class"],
+                              p: [...(defaultSchema.attributes?.p ?? []), "className", "class"],
+                            },
+                          }],
+                        ]}
                         components={handoutComponents}
                       >
                         {block.content}
