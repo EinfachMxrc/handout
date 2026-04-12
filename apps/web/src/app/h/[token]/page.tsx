@@ -8,6 +8,7 @@ import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import { api } from "@convex/_generated/api";
 import { handoutComponents } from "@/components/ui/HandoutComponents";
+import { TerminalFlashContext } from "@/components/ui/Terminal";
 
 function getViewerId(): string {
   const key = "slide-handout-viewer-id";
@@ -38,6 +39,15 @@ export default function PublicHandoutPage() {
 
   const prevBlockIdsRef = useRef<Set<string>>(new Set());
   const [newBlockIds, setNewBlockIds] = useState<Set<string>>(new Set());
+  const [flashBlockIds, setFlashBlockIds] = useState<Set<string>>(new Set());
+  const wasHiddenRef = useRef(false);
+
+  // Track whether the tab was in the background
+  useEffect(() => {
+    const onVisibility = () => { wasHiddenRef.current = document.hidden; };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, []);
 
   useEffect(() => {
     if (!visibleBlocks) return;
@@ -54,6 +64,13 @@ export default function PublicHandoutPage() {
     if (freshIds.size === 0) return;
 
     setNewBlockIds(freshIds);
+
+    // Flash terminals if the tab was hidden when the update came in
+    if (wasHiddenRef.current) {
+      setFlashBlockIds(freshIds);
+      setTimeout(() => setFlashBlockIds(new Set()), 3500);
+    }
+
     const timer = setTimeout(() => setNewBlockIds(new Set()), 2000);
     return () => clearTimeout(timer);
   }, [visibleBlocks]);
@@ -154,6 +171,7 @@ export default function PublicHandoutPage() {
           ) : (
             visibleBlocks.map((block, idx) => {
               const isNew = newBlockIds.has(block.id);
+              const shouldFlash = flashBlockIds.has(block.id);
               return (
                 <article
                   key={block.id}
@@ -170,13 +188,15 @@ export default function PublicHandoutPage() {
                   </div>
                   <h2 className="mt-3 text-3xl font-bold sm:text-4xl">{block.title}</h2>
                   <div className="markdown-content mt-5 text-base">
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm]}
-                      rehypePlugins={[rehypeRaw]}
-                      components={handoutComponents}
-                    >
-                      {block.content}
-                    </ReactMarkdown>
+                    <TerminalFlashContext.Provider value={shouldFlash}>
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        rehypePlugins={[rehypeRaw]}
+                        components={handoutComponents}
+                      >
+                        {block.content}
+                      </ReactMarkdown>
+                    </TerminalFlashContext.Provider>
                   </div>
                 </article>
               );

@@ -344,6 +344,8 @@
 .terminal-dots { @apply flex items-center gap-1.5; }
 .terminal-dot {
   @apply block h-[0.6rem] w-[0.6rem] rounded-full;
+  position: relative;
+  transition: transform 0.15s ease, filter 0.15s ease;
 }
 .terminal-dot-red { background: #FF5F57; }
 .terminal-dot-yellow { background: #FEBC2E; }
@@ -371,9 +373,46 @@
   color: #5AC8FA;
   animation: cursor-blink 0.8s steps(2) infinite;
 }
+.terminal-cursor-idle {
+  animation: cursor-blink-idle 1.2s ease-in-out infinite;
+}
 @keyframes cursor-blink {
   0% { opacity: 1; }
   50% { opacity: 0; }
+  100% { opacity: 1; }
+}
+@keyframes cursor-blink-idle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* macOS dot hover animations */
+.terminal-dot-hover {
+  transform: scale(1.15);
+  filter: brightness(1.15);
+}
+.terminal-dot-icon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.45rem;
+  font-weight: 700;
+  color: rgba(0,0,0,0.65);
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* Flash notification when new content arrives in background tab */
+@keyframes terminal-flash-anim {
+  0%   { box-shadow: 0 0 0 0 rgba(91,184,184,0); border-color: inherit; }
+  20%  { box-shadow: 0 0 0 4px rgba(91,184,184,0.4); border-color: rgba(91,184,184,0.6); }
+  60%  { box-shadow: 0 0 0 4px rgba(91,184,184,0.4); border-color: rgba(91,184,184,0.6); }
+  100% { box-shadow: 0 0 0 0 rgba(91,184,184,0); border-color: inherit; }
+}
+.terminal-flash {
+  animation: terminal-flash-anim 1.5s ease-in-out 2;
 }
 
 /* ── Callout Box ──────────────────────────────── */
