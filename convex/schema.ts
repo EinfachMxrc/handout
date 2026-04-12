@@ -36,6 +36,7 @@ export default defineSchema({
     presenterId: v.id("presenters"),
     title: v.string(),
     description: v.optional(v.string()),
+    pdfFileId: v.optional(v.id("_storage")),
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_presenter", ["presenterId"]),
@@ -47,6 +48,13 @@ export default defineSchema({
     content: v.string(),
     order: v.number(),
     revealRule: revealRuleValidator,
+    // Image support
+    imageId: v.optional(v.id("_storage")),
+    imagePosition: v.optional(v.string()), // "above" | "below" | "left" | "right" | "background" | "full-width"
+    imageCaption: v.optional(v.string()),
+    // Rich customization
+    fontSize: v.optional(v.string()), // "sm" | "base" | "lg" | "xl"
+    layout: v.optional(v.string()), // "default" | "centered" | "wide" | "compact"
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_handout", ["handoutId"]),

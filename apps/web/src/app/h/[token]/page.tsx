@@ -67,6 +67,12 @@ export default function PublicHandoutPage() {
 
     setNewBlockIds(freshIds);
 
+    // Scroll to the first new block
+    setTimeout(() => {
+      const el = document.querySelector(`[data-block-id="${[...freshIds][0]}"]`);
+      el?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+
     // Flash terminals if the tab was hidden when the update came in
     let flashTimer: ReturnType<typeof setTimeout> | undefined;
     if (wasHiddenRef.current) {
@@ -82,6 +88,17 @@ export default function PublicHandoutPage() {
   }, [visibleBlocks]);
 
   const handlePrint = () => window.print();
+
+  const handleDownloadPDF = () => {
+    const previousTitle = document.title;
+    document.title = sessionInfo?.handoutTitle || "handout";
+    const restoreTitle = () => {
+      document.title = previousTitle;
+      window.removeEventListener("afterprint", restoreTitle);
+    };
+    window.addEventListener("afterprint", restoreTitle);
+    window.print();
+  };
 
   if (sessionInfo === undefined || visibleBlocks === undefined) {
     return (
@@ -125,14 +142,6 @@ export default function PublicHandoutPage() {
 
   return (
     <div className="handout-reader pb-16 pt-6">
-      <style>{`
-        @media print {
-          .no-print { display: none !important; }
-          body { background: white; }
-          .handout-block { break-inside: avoid; page-break-inside: avoid; }
-        }
-      `}</style>
-
       <div className="page-shell">
         <header className="page-hero no-print">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
@@ -151,6 +160,15 @@ export default function PublicHandoutPage() {
               <button onClick={handlePrint} className="btn-secondary">
                 Drucken
               </button>
+              {sessionInfo.pdfUrl ? (
+                <a href={sessionInfo.pdfUrl} download className="btn-secondary">
+                  PDF herunterladen
+                </a>
+              ) : (
+                <button onClick={handleDownloadPDF} className="btn-secondary">
+                  Als PDF speichern
+                </button>
+              )}
             </div>
           </div>
 
@@ -178,22 +196,56 @@ export default function PublicHandoutPage() {
             visibleBlocks.map((block, idx) => {
               const isNew = newBlockIds.has(block.id);
               const shouldFlash = flashBlockIds.has(block.id);
-              return (
-                <article
-                  key={block.id}
-                  className={`handout-block card ${isNew ? "ring-2 ring-emerald-300 dark:ring-emerald-500" : ""}`}
-                >
-                  <div className="flex items-center gap-3">
+
+              const fontSizeClass = {
+                sm: "text-sm",
+                base: "text-base",
+                lg: "text-lg",
+                xl: "text-xl",
+              }[block.fontSize ?? "base"] ?? "text-base";
+
+              const layoutClass = {
+                default: "",
+                centered: "text-center mx-auto max-w-2xl",
+                wide: "max-w-none",
+                compact: "max-w-lg mx-auto",
+              }[block.layout ?? "default"] ?? "";
+
+              const blockImage = block.imageUrl ? (
+                <figure className={`${block.imagePosition === "full-width" ? "w-full" : ""}`}>
+                  <img
+                    src={block.imageUrl}
+                    alt={block.imageCaption || block.title}
+                    className={`rounded-lg ${
+                      block.imagePosition === "full-width" ? "w-full object-cover max-h-80" :
+                      block.imagePosition === "background" ? "absolute inset-0 w-full h-full object-cover opacity-20 rounded-xl" :
+                      "max-h-64 object-contain"
+                    }`}
+                  />
+                  {block.imageCaption && (
+                    <figcaption className="mt-2 text-center text-sm" style={{ color: "var(--ink-muted)" }}>
+                      {block.imageCaption}
+                    </figcaption>
+                  )}
+                </figure>
+              ) : null;
+
+              const contentSection = (
+                <>
+                  <div className="flex items-center gap-3 pt-5 px-0">
                     <span
                       className="block-number flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold text-white"
                       style={{ background: "var(--accent)" }}
                     >
                       {String(idx + 1).padStart(2, "0")}
                     </span>
+                    <svg className="h-4 w-4" style={{ color: "var(--accent)" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                    </svg>
                     <span className="eyebrow">Abschnitt</span>
                   </div>
                   <h2 className="mt-3 text-3xl font-bold sm:text-4xl">{block.title}</h2>
-                  <div className="markdown-content mt-5 text-base">
+                  <div className={`markdown-content mt-5 ${fontSizeClass}`}>
                     <TerminalFlashContext.Provider value={shouldFlash}>
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
@@ -217,14 +269,50 @@ export default function PublicHandoutPage() {
                       </ReactMarkdown>
                     </TerminalFlashContext.Provider>
                   </div>
+                </>
+              );
+
+              return (
+                <article
+                  key={block.id}
+                  data-block-id={block.id}
+                  className={`handout-block card overflow-hidden ${layoutClass} ${isNew ? "ring-2 ring-emerald-300 dark:ring-emerald-500" : ""} ${block.imagePosition === "background" ? "relative" : ""}`}
+                >
+                  <div className="h-1 w-full rounded-t-lg bg-gradient-to-r from-[#5BB8B8] to-[#E8998D]" />
+
+                  {block.imagePosition === "background" && blockImage}
+
+                  {block.imagePosition === "left" && blockImage ? (
+                    <div className="flex flex-col md:flex-row gap-6">
+                      <div className="md:w-1/3 flex-shrink-0">{blockImage}</div>
+                      <div className="md:w-2/3">{contentSection}</div>
+                    </div>
+                  ) : block.imagePosition === "right" && blockImage ? (
+                    <div className="flex flex-col md:flex-row gap-6">
+                      <div className="md:w-2/3">{contentSection}</div>
+                      <div className="md:w-1/3 flex-shrink-0">{blockImage}</div>
+                    </div>
+                  ) : (
+                    <>
+                      {(block.imagePosition === "above" || block.imagePosition === "full-width") && blockImage}
+                      {contentSection}
+                      {block.imagePosition === "below" && blockImage}
+                    </>
+                  )}
                 </article>
               );
             })
           )}
         </main>
 
-        <footer className="no-print pt-8 text-center text-xs uppercase tracking-widest" style={{ color: "var(--ink-muted)" }}>
+        <footer className="no-print flex items-center justify-center gap-2 pt-8 text-center text-xs uppercase tracking-widest" style={{ color: "var(--ink-muted)" }}>
           Slide Handout · {footerText}
+          {sessionInfo.status === "live" && (
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            </span>
+          )}
         </footer>
       </div>
     </div>

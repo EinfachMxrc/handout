@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useMutation } from "convex/react";
+import { useState, useEffect } from "react";
+import { useMutation, useQuery } from "convex/react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { api } from "@convex/_generated/api";
@@ -21,6 +21,11 @@ interface BlockEditorProps {
       alwaysVisible?: boolean;
       manuallyTriggered?: boolean;
     };
+    imageId?: Id<"_storage">;
+    imagePosition?: string;
+    imageCaption?: string;
+    fontSize?: string;
+    layout?: string;
   };
   onSave: () => void;
   onCancel: () => void;
@@ -30,6 +35,7 @@ export function BlockEditor({ handoutId, block, onSave, onCancel }: BlockEditorP
   const { token } = useAuthStore();
   const createBlock = useMutation(api.handouts.createBlock);
   const updateBlock = useMutation(api.handouts.updateBlock);
+  const generateUploadUrl = useMutation(api.handouts.generateUploadUrl);
 
   const [title, setTitle] = useState(block?.title ?? "");
   const [content, setContent] = useState(block?.content ?? "");
@@ -45,6 +51,58 @@ export function BlockEditor({ handoutId, block, onSave, onCancel }: BlockEditorP
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
   const [contentTab, setContentTab] = useState<"edit" | "preview">("edit");
+
+  // Image & customization state
+  const [imageId, setImageId] = useState<Id<"_storage"> | undefined>(block?.imageId);
+  const [imagePosition, setImagePosition] = useState(block?.imagePosition ?? "above");
+  const [imageCaption, setImageCaption] = useState(block?.imageCaption ?? "");
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (imagePreview) URL.revokeObjectURL(imagePreview);
+    };
+  }, [imagePreview]);
+  const [fontSize, setFontSize] = useState(block?.fontSize ?? "base");
+  const [layout, setLayout] = useState(block?.layout ?? "default");
+
+  // Resolve existing image URL for preview
+  const existingImageUrl = useQuery(
+    api.handouts.getImageUrl,
+    imageId ? { storageId: imageId } : "skip"
+  );
+
+  const displayImagePreview = imagePreview ?? existingImageUrl ?? null;
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !token) return;
+
+    setIsUploading(true);
+    try {
+      const url = await generateUploadUrl({ token });
+      const result = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+      if (!result.ok) throw new Error("Upload fehlgeschlagen: " + result.status);
+      const { storageId } = await result.json();
+      setImageId(storageId as Id<"_storage">);
+      if (imagePreview) URL.revokeObjectURL(imagePreview);
+      setImagePreview(URL.createObjectURL(file));
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Bild-Upload fehlgeschlagen");
+    } finally {
+      setIsUploading(false);
+    }
+  }
+
+  function removeImage() {
+    setImageId(undefined);
+    setImagePreview(null);
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,6 +133,11 @@ export function BlockEditor({ handoutId, block, onSave, onCancel }: BlockEditorP
           title,
           content,
           revealRule,
+          ...(imageId ? { imageId } : { removeImage: !imageId && !!block.imageId ? true : undefined }),
+          imagePosition,
+          imageCaption: imageCaption || undefined,
+          fontSize,
+          layout,
         });
       } else {
         await createBlock({
@@ -83,6 +146,11 @@ export function BlockEditor({ handoutId, block, onSave, onCancel }: BlockEditorP
           title,
           content,
           revealRule,
+          imageId,
+          imagePosition,
+          imageCaption: imageCaption || undefined,
+          fontSize,
+          layout,
         });
       }
       onSave();
@@ -155,6 +223,102 @@ export function BlockEditor({ handoutId, block, onSave, onCancel }: BlockEditorP
             </div>
           </div>
         )}
+      </div>
+
+      {/* ---- Image Upload ---- */}
+      <div className="rounded-2xl p-5" style={{ border: "1px solid var(--line)", background: "var(--paper)" }}>
+        <div className="eyebrow">Bild</div>
+        <div className="mt-4 space-y-3">
+          <div>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              disabled={isUploading}
+              className="block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:px-4 file:py-2 file:text-sm file:font-medium"
+              style={{ color: "var(--ink-soft)" }}
+            />
+            {isUploading && (
+              <p className="mt-1 text-sm" style={{ color: "var(--ink-muted)" }}>Wird hochgeladen...</p>
+            )}
+          </div>
+
+          {displayImagePreview && (
+            <div className="relative inline-block">
+              <img src={displayImagePreview} alt="Vorschau" className="max-h-48 rounded-lg" />
+              <button
+                type="button"
+                onClick={removeImage}
+                className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-xs text-white shadow hover:bg-red-700"
+              >
+                X
+              </button>
+            </div>
+          )}
+
+          <div>
+            <label className="label" htmlFor="image-position">Position</label>
+            <select
+              id="image-position"
+              className="input"
+              value={imagePosition}
+              onChange={(e) => setImagePosition(e.target.value)}
+            >
+              <option value="above">Ueber dem Text</option>
+              <option value="below">Unter dem Text</option>
+              <option value="left">Links neben Text</option>
+              <option value="right">Rechts neben Text</option>
+              <option value="full-width">Volle Breite</option>
+              <option value="background">Hintergrundbild</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="label" htmlFor="image-caption">Bildunterschrift</label>
+            <input
+              id="image-caption"
+              className="input"
+              value={imageCaption}
+              onChange={(e) => setImageCaption(e.target.value)}
+              placeholder="Bildunterschrift (optional)"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* ---- Font Size & Layout ---- */}
+      <div className="rounded-2xl p-5" style={{ border: "1px solid var(--line)", background: "var(--paper)" }}>
+        <div className="eyebrow">Darstellung</div>
+        <div className="mt-4 grid grid-cols-2 gap-4">
+          <div>
+            <label className="label" htmlFor="font-size">Schriftgroesse</label>
+            <select
+              id="font-size"
+              className="input"
+              value={fontSize}
+              onChange={(e) => setFontSize(e.target.value)}
+            >
+              <option value="sm">Klein</option>
+              <option value="base">Normal</option>
+              <option value="lg">Gross</option>
+              <option value="xl">Sehr gross</option>
+            </select>
+          </div>
+          <div>
+            <label className="label" htmlFor="layout">Layout</label>
+            <select
+              id="layout"
+              className="input"
+              value={layout}
+              onChange={(e) => setLayout(e.target.value)}
+            >
+              <option value="default">Standard</option>
+              <option value="centered">Zentriert</option>
+              <option value="wide">Breit</option>
+              <option value="compact">Kompakt</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       <div className="rounded-2xl p-5" style={{ border: "1px solid var(--line)", background: "var(--paper)" }}>

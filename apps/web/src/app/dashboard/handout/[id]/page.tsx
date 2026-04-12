@@ -148,12 +148,16 @@ export default function HandoutEditPage() {
   const reorderBlocks = useMutation(api.handouts.reorderBlocks);
   const createSession = useMutation(api.sessions.createSession);
   const updateHandout = useMutation(api.handouts.updateHandout);
+  const generateUploadUrl = useMutation(api.handouts.generateUploadUrl);
+  const setPdfFile = useMutation(api.handouts.setPdfFile);
+  const removePdfFile = useMutation(api.handouts.removePdfFile);
 
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
   const [isCreatingBlock, setIsCreatingBlock] = useState(false);
   const [isEditingHandout, setIsEditingHandout] = useState(false);
   const [handoutTitle, setHandoutTitle] = useState("");
   const [handoutDesc, setHandoutDesc] = useState("");
+  const [isUploadingPdf, setIsUploadingPdf] = useState(false);
 
   const openEditHandout = () => {
     if (!data) return;
@@ -172,6 +176,32 @@ export default function HandoutEditPage() {
       description: handoutDesc || undefined,
     });
     setIsEditingHandout(false);
+  };
+
+  const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !token || isDemo) return;
+    setIsUploadingPdf(true);
+    try {
+      const uploadUrl = await generateUploadUrl({ token });
+      const result = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+      if (!result.ok) throw new Error("PDF-Upload fehlgeschlagen");
+      const { storageId } = await result.json();
+      if (!storageId) throw new Error("Keine storageId vom Upload erhalten");
+      await setPdfFile({ token, handoutId: handoutId as Id<"handouts">, pdfFileId: storageId });
+    } finally {
+      setIsUploadingPdf(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleRemovePdf = async () => {
+    if (!token || isDemo) return;
+    await removePdfFile({ token, handoutId: handoutId as Id<"handouts"> });
   };
 
   const handleStartSession = async () => {
@@ -325,6 +355,28 @@ export default function HandoutEditPage() {
             )}
           </div>
         </DndProvider>
+      </section>
+
+      <section className="section-panel">
+        <div className="card p-5 space-y-3">
+          <h3 className="text-lg font-semibold">Voreingestellte PDF</h3>
+          <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
+            Lade eine fertige PDF hoch, die deine Zuhoerer direkt herunterladen koennen.
+          </p>
+          {data.pdfFileId ? (
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-emerald-600">PDF hochgeladen</span>
+              <button onClick={handleRemovePdf} className="btn-danger text-xs px-3 py-1.5" disabled={isDemo}>
+                Entfernen
+              </button>
+            </div>
+          ) : (
+            <label className={`btn-secondary cursor-pointer inline-block ${isUploadingPdf ? "opacity-50 pointer-events-none" : ""}`}>
+              {isUploadingPdf ? "Wird hochgeladen…" : "PDF hochladen"}
+              <input type="file" accept=".pdf" className="hidden" onChange={handlePdfUpload} disabled={isDemo || isUploadingPdf} />
+            </label>
+          )}
+        </div>
       </section>
 
       <Modal isOpen={isCreatingBlock} onClose={() => setIsCreatingBlock(false)} title="Neuer Block" size="lg">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation } from "convex/react";
 import Link from "next/link";
@@ -10,11 +10,17 @@ import { useAuthStore } from "@/store/authStore";
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { token, clearAuth, presenterName, presenterEmail, isDemo, setAuth } = useAuthStore();
   const router = useRouter();
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
 
   const presenterInfo = useQuery(api.auth.validateToken, token ? { token } : "skip");
   const logoutMutation = useMutation(api.auth.logout);
 
   useEffect(() => {
+    if (!hydrated) return;
     if (!token) {
       router.push("/auth/login");
       return;
@@ -32,7 +38,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     ) {
       setAuth(token, presenterInfo.name ?? undefined, presenterInfo.email, presenterInfo.isDemo);
     }
-  }, [token, presenterInfo, presenterName, presenterEmail, isDemo, router, clearAuth, setAuth]);
+  }, [hydrated, token, presenterInfo, presenterName, presenterEmail, isDemo, router, clearAuth, setAuth]);
 
   const handleLogout = async () => {
     if (token) {
@@ -45,6 +51,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     clearAuth();
     router.push("/auth/login");
   };
+
+  if (!hydrated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-stone-300 border-t-stone-800" />
+      </div>
+    );
+  }
 
   if (!token) return null;
 
