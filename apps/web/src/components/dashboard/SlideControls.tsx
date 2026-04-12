@@ -58,32 +58,32 @@ export function SlideControls({
   };
 
   const syncModeColor: Record<string, string> = {
-    auto: "border-emerald-500/20 bg-emerald-50/90 text-emerald-800",
-    hybrid: "border-amber-500/20 bg-amber-50/90 text-amber-800",
-    manual: "border-stone-500/15 bg-stone-100/80 text-stone-700",
+    auto: "border-emerald-500/20 bg-emerald-50/90 text-emerald-800 dark:border-emerald-400/30 dark:bg-emerald-950/50 dark:text-emerald-300",
+    hybrid: "border-amber-500/20 bg-amber-50/90 text-amber-800 dark:border-amber-400/30 dark:bg-amber-950/50 dark:text-amber-300",
+    manual: "border-slate-500/15 bg-slate-100/80 text-slate-700 dark:border-slate-400/20 dark:bg-slate-800/60 dark:text-slate-300",
   };
 
   return (
     <div className="space-y-5">
       <div className="grid gap-4 sm:grid-cols-[0.9fr_1.1fr]">
-        <div className="rounded-[24px] border border-stone-900/8 bg-white/75 p-5 text-center">
+        <div className="rounded-2xl p-5 text-center" style={{ border: "1px solid var(--line)", background: "var(--paper)" }}>
           <div className="metric-label">Aktuelle Folie</div>
-          <div className="mt-3 text-6xl leading-none text-stone-900">{currentSlide}</div>
-          <div className="mt-2 text-sm text-stone-500">
+          <div className="mt-3 text-6xl leading-none">{currentSlide}</div>
+          <div className="mt-2 text-sm" style={{ color: "var(--ink-muted)" }}>
             {totalSlides ? `von ${totalSlides}` : "Gesamtzahl offen"}
           </div>
         </div>
 
-        <div className="rounded-[24px] border border-stone-900/8 bg-white/65 p-5">
+        <div className="rounded-2xl p-5" style={{ border: "1px solid var(--line)", background: "var(--paper)" }}>
           <div className="flex items-center justify-between gap-3">
             <div>
               <div className="metric-label">Synchronisation</div>
-              <div className="mt-2 text-base font-semibold text-stone-900">
+              <div className="mt-2 text-base font-semibold">
                 {syncModeLabel[syncMode] ?? syncMode}
               </div>
             </div>
             <span
-              className={`rounded-full border px-3 py-1 text-[0.72rem] font-semibold uppercase tracking-[0.16em] ${syncModeColor[syncMode] ?? syncModeColor.manual}`}
+              className={`rounded-lg border px-3 py-1 text-[0.72rem] font-semibold uppercase tracking-[0.16em] ${syncModeColor[syncMode] ?? syncModeColor.manual}`}
             >
               {syncModeLabel[syncMode] ?? syncMode}
             </span>

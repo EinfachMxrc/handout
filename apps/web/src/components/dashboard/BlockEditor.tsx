@@ -141,26 +141,26 @@ export function BlockEditor({ handoutId, block, onSave, onCancel }: BlockEditorP
             value={content}
             onChange={(e) => setContent(e.target.value)}
             rows={10}
-            placeholder="## Überschrift&#10;&#10;Inhalt in Markdown..."
+            placeholder="## Überschrift&#10;&#10;Inhalt in Markdown…"
             required
           />
         ) : (
-          <div className="rounded-[24px] border border-stone-900/8 bg-white/75 p-5">
+          <div className="rounded-2xl p-5" style={{ border: "1px solid var(--line)", background: "var(--paper)" }}>
             <div className="markdown-content min-h-[14rem]">
               {content ? (
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
               ) : (
-                <p className="text-sm text-stone-400">Noch kein Inhalt eingegeben.</p>
+                <p className="text-sm text-slate-400">Noch kein Inhalt eingegeben.</p>
               )}
             </div>
           </div>
         )}
       </div>
 
-      <div className="rounded-[28px] border border-stone-900/8 bg-white/70 p-5">
+      <div className="rounded-2xl p-5" style={{ border: "1px solid var(--line)", background: "var(--paper)" }}>
         <div className="eyebrow">Reveal-Regeln</div>
         <div className="mt-4 space-y-4">
-          <label className="flex items-center gap-3 text-sm text-stone-700">
+          <label className="flex items-center gap-3 text-sm" style={{ color: "var(--ink-soft)" }}>
             <input
               type="checkbox"
               checked={alwaysVisible}
@@ -173,7 +173,7 @@ export function BlockEditor({ handoutId, block, onSave, onCancel }: BlockEditorP
             Immer sichtbar
           </label>
 
-          <label className="flex items-center gap-3 text-sm text-stone-700">
+          <label className="flex items-center gap-3 text-sm" style={{ color: "var(--ink-soft)" }}>
             <input
               type="checkbox"
               checked={manuallyTriggered}
@@ -215,7 +215,7 @@ export function BlockEditor({ handoutId, block, onSave, onCancel }: BlockEditorP
                   placeholder="optional"
                 />
               </div>
-              <label className="sm:col-span-2 flex items-center gap-3 text-sm text-stone-700">
+              <label className="sm:col-span-2 flex items-center gap-3 text-sm" style={{ color: "var(--ink-soft)" }}>
                 <input
                   type="checkbox"
                   checked={relockOnBack}
@@ -230,7 +230,7 @@ export function BlockEditor({ handoutId, block, onSave, onCancel }: BlockEditorP
       </div>
 
       {error && (
-        <div className="rounded-[22px] border border-red-300/40 bg-red-50/90 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-2xl border border-red-300/40 bg-red-50/90 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/50 dark:text-red-300">
           {error}
         </div>
       )}

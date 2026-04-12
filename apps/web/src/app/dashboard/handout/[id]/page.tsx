@@ -75,14 +75,15 @@ function DraggableBlock({
   return (
     <div
       ref={ref}
-      className={`card transition-all duration-200 ${isDragging ? "scale-[0.99] opacity-50" : ""} ${isOver ? "ring-2 ring-stone-300/80" : ""}`}
+      className={`card transition-all duration-200 ${isDragging ? "scale-[0.99] opacity-50" : ""} ${isOver ? "ring-2 ring-indigo-300 dark:ring-indigo-500" : ""}`}
     >
       <div className="flex items-start gap-4">
         <div
           ref={drag as any}
-          className={`mt-1 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border border-stone-900/8 bg-white/70 text-xl ${
+          className={`mt-1 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl text-xl ${
             isReadonly ? "cursor-not-allowed opacity-40" : "cursor-grab active:cursor-grabbing"
           }`}
+          style={{ border: "1px solid var(--line)", background: "var(--paper)" }}
           title="Ziehen zum Sortieren"
         >
           ::
@@ -90,18 +91,22 @@ function DraggableBlock({
 
         <div className="flex flex-col gap-2 pt-1">
           <button
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-stone-900/10 bg-white/70 text-stone-500 transition hover:text-stone-900 disabled:opacity-30"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg transition disabled:opacity-30"
+            style={{ border: "1px solid var(--line)", background: "var(--paper)", color: "var(--ink-muted)" }}
             onClick={() => onMoveBlock(block._id, "up")}
             disabled={isReadonly || index === 0}
             title="Nach oben"
+            aria-label="Block nach oben verschieben"
           >
             ^
           </button>
           <button
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-stone-900/10 bg-white/70 text-stone-500 transition hover:text-stone-900 disabled:opacity-30"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg transition disabled:opacity-30"
+            style={{ border: "1px solid var(--line)", background: "var(--paper)", color: "var(--ink-muted)" }}
             onClick={() => onMoveBlock(block._id, "down")}
             disabled={isReadonly || index === totalBlocks - 1}
             title="Nach unten"
+            aria-label="Block nach unten verschieben"
           >
             v
           </button>
@@ -113,7 +118,7 @@ function DraggableBlock({
             <Badge variant="blue">{revealRuleLabel(block.revealRule)}</Badge>
           </div>
           <h3 className="mt-3 text-3xl leading-tight">{block.title}</h3>
-          <p className="mt-3 line-clamp-3 text-sm leading-7 text-stone-600">{block.content}</p>
+          <p className="mt-3 line-clamp-3 text-sm leading-7" style={{ color: "var(--ink-soft)" }}>{block.content}</p>
         </div>
 
         <div className="flex flex-col gap-2">
@@ -208,7 +213,7 @@ export default function HandoutEditPage() {
   };
 
   if (!data) {
-    return <div className="section-panel text-center text-stone-500">Lädt Handout...</div>;
+    return <div className="section-panel text-center" style={{ color: "var(--ink-muted)" }}>Lädt Handout…</div>;
   }
 
   const blocks = [...data.blocks].sort((a, b) => a.order - b.order);
@@ -218,7 +223,7 @@ export default function HandoutEditPage() {
     if (rule.manuallyTriggered) return "Manuell";
     let label = `Ab Folie ${rule.revealSlide}`;
     if (rule.revealToSlide) label += ` bis ${rule.revealToSlide}`;
-    if (rule.relockOnBack) label += " rücksperrend";
+    if (rule.relockOnBack) label += " (rücksperrend)";
     return label;
   };
 
@@ -226,16 +231,16 @@ export default function HandoutEditPage() {
     <div className="space-y-8">
       {isDemo && (
         <div className="soft-note">
-          Dieses Handout ist im Demo-Account nur lesbar. Bearbeiten, Blocks
-          anlegen oder Sessions starten bleibt für alle Demo-Nutzer gesperrt.
+          Demo-Modus: Dieses Handout ist nur lesbar. Bearbeiten, Blöcke
+          anlegen oder Sessions starten ist für Demo-Nutzer gesperrt.
         </div>
       )}
 
       <section className="page-hero">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <div className="flex flex-wrap items-center gap-2 text-sm text-stone-500">
-              <Link href="/dashboard" className="underline decoration-stone-300">
+            <div className="flex flex-wrap items-center gap-2 text-sm" style={{ color: "var(--ink-muted)" }}>
+              <Link href="/dashboard" className="underline" style={{ textDecorationColor: "var(--accent)" }}>
                 Dashboard
               </Link>
               <span>/</span>
@@ -260,17 +265,17 @@ export default function HandoutEditPage() {
 
         <div className="mt-8 grid gap-4 sm:grid-cols-3">
           <div className="metric-card">
-            <div className="metric-label">Blocks</div>
+            <div className="metric-label">Blöcke</div>
             <div className="metric-value">{blocks.length}</div>
           </div>
           <div className="metric-card">
             <div className="metric-label">Reveal-System</div>
-            <div className="mt-3 text-lg font-semibold text-stone-900">Slide-basiert</div>
+            <div className="mt-3 text-lg font-semibold">Slide-basiert</div>
           </div>
           <div className="metric-card">
             <div className="metric-label">Modus</div>
-            <div className="mt-3 text-lg font-semibold text-stone-900">
-              {isDemo ? "Demo read-only" : "Vollzugriff"}
+            <div className="mt-3 text-lg font-semibold">
+              {isDemo ? "Demo (read-only)" : "Vollzugriff"}
             </div>
           </div>
         </div>

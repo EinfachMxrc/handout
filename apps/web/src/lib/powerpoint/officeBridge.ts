@@ -22,7 +22,9 @@ let pollTimer: ReturnType<typeof setInterval> | null = null;
 let windowBlurListener: (() => void) | null = null;
 let windowFocusListener: (() => void) | null = null;
 
-const POLL_MS = 500;
+// Slower poll during slideshow (taskpane may be in background)
+const POLL_EDIT_MS = 500;
+const POLL_READ_MS = 1000;
 
 export function isOfficeAvailable(): boolean {
   return typeof Office !== "undefined" && typeof Office.context !== "undefined";
@@ -67,7 +69,7 @@ export function initOfficeBridge(
       isInitialized = true;
 
       void syncCurrentSlide();
-      startPolling();
+      startPolling(POLL_EDIT_MS);
       setupWindowListeners();
 
       try {
@@ -105,12 +107,20 @@ function handleSelectionChanged() {
   void syncCurrentSlide();
 }
 
-function handleActiveViewChanged(args: { activeView: string }) {
+function handleActiveViewChanged(args: { activeView?: string }) {
   const newView = (args?.activeView ?? "edit") === "read" ? "read" : "edit";
   if (newView !== currentView) {
     currentView = newView;
     // Force a fresh report when switching between edit and slideshow
     lastReportedSlide = null;
+  }
+
+  if (currentView === "read") {
+    // Slideshow started — poll less aggressively since taskpane may be in background.
+    startPolling(POLL_READ_MS);
+  } else {
+    // Returned to edit mode — re-sync immediately with faster polling.
+    startPolling(POLL_EDIT_MS);
   }
   void syncCurrentSlide();
 }
@@ -128,9 +138,9 @@ async function syncCurrentSlide() {
   }
 }
 
-function startPolling() {
+function startPolling(intervalMs: number) {
   if (pollTimer) clearInterval(pollTimer);
-  pollTimer = setInterval(() => void syncCurrentSlide(), POLL_MS);
+  pollTimer = setInterval(() => void syncCurrentSlide(), intervalMs);
 }
 
 function setupWindowListeners() {
@@ -175,10 +185,10 @@ export function getCurrentSlideInfo(): Promise<OfficeSlideInfo | null> {
       return;
     }
 
-    const rawTitle = Office.context.document.url ?? "Praesentation";
+    const rawTitle = Office.context.document.url ?? "Präsentation";
     const presentationTitle =
       rawTitle.split(/[/\\]/).pop()?.replace(/\.pptx?$/i, "") ??
-      "Praesentation";
+      "Präsentation";
 
     // In slideshow (read) mode getSelectedDataAsync has no selection to read.
     // Use PowerPoint.run + getSelectedSlides which tracks the presented slide.
