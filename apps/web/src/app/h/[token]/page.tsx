@@ -5,7 +5,9 @@ import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 import { api } from "@convex/_generated/api";
+import { handoutComponents } from "@/components/ui/HandoutComponents";
 
 function getViewerId(): string {
   const key = "slide-handout-viewer-id";
@@ -168,7 +170,13 @@ export default function PublicHandoutPage() {
                   </div>
                   <h2 className="mt-3 text-3xl font-bold sm:text-4xl">{block.title}</h2>
                   <div className="markdown-content mt-5 text-base">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{block.content}</ReactMarkdown>
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      rehypePlugins={[rehypeRaw]}
+                      components={handoutComponents}
+                    >
+                      {block.content}
+                    </ReactMarkdown>
                   </div>
                 </article>
               );

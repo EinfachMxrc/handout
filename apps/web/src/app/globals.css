@@ -327,6 +327,114 @@
   background: #E8998D;
 }
 
+/* ── Terminal Window ───────────────────────────── */
+.terminal-window {
+  @apply relative overflow-hidden rounded-xl;
+  background: #1E2A38;
+  border: 1px solid rgba(255,255,255,0.06);
+  font-family: "SF Mono", "Fira Code", "JetBrains Mono", "Cascadia Code", ui-monospace, monospace;
+}
+.terminal-variant-label {
+  @apply px-4 pt-3 text-xs font-bold uppercase tracking-[0.18em];
+}
+.terminal-titlebar {
+  @apply flex items-center gap-3 px-4 py-2.5;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.terminal-dots { @apply flex items-center gap-1.5; }
+.terminal-dot {
+  @apply block h-[0.6rem] w-[0.6rem] rounded-full;
+}
+.terminal-dot-red { background: #FF5F57; }
+.terminal-dot-yellow { background: #FEBC2E; }
+.terminal-dot-green { background: #28C840; }
+.terminal-title {
+  @apply text-xs;
+  color: rgba(255,255,255,0.4);
+}
+.terminal-body {
+  @apply overflow-x-auto p-4 text-sm leading-relaxed;
+  background: transparent !important;
+  color: #F2F2F7;
+  margin: 0;
+  border-radius: 0;
+  padding-top: 1rem;
+}
+.terminal-body::before { display: none; }
+.terminal-body code {
+  @apply bg-transparent p-0;
+  color: inherit;
+  font-family: inherit;
+}
+.terminal-cursor {
+  @apply inline-block;
+  color: #5AC8FA;
+  animation: cursor-blink 0.8s steps(2) infinite;
+}
+@keyframes cursor-blink {
+  0% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* ── Callout Box ──────────────────────────────── */
+.callout-box {
+  @apply my-5 rounded-xl p-5;
+  background: rgba(232,153,141,0.08);
+  border-left: 3px solid #E8998D;
+}
+.handout-reader .callout-box {
+  background: rgba(232,153,141,0.1);
+  border-left-color: #E8998D;
+}
+.callout-box p { margin-bottom: 0.5rem; }
+.callout-box p:last-child { margin-bottom: 0; }
+
+/* ── Grid Layouts (HTML in markdown via rehype-raw) ── */
+.grid-2 {
+  @apply my-5 grid gap-4;
+  grid-template-columns: 1fr 1fr;
+}
+@media (max-width: 640px) {
+  .grid-2 { grid-template-columns: 1fr; }
+}
+.grid-2 > div {
+  @apply rounded-xl p-5;
+}
+.handout-reader .grid-2 > div {
+  background: #34495E;
+}
+
+/* ── Stat Numbers ─────────────────────────────── */
+.stat {
+  @apply text-4xl font-bold leading-none sm:text-5xl;
+  font-family: var(--font-display), system-ui, sans-serif;
+  color: #FFFFFF;
+}
+.stat-label {
+  @apply mt-1 text-sm;
+  color: rgba(255,255,255,0.6);
+}
+
+/* ── Section Box (dark themed content card) ──── */
+.section-box {
+  @apply my-5 rounded-xl p-5;
+}
+.handout-reader .section-box {
+  background: #34495E;
+}
+.section-box-teal {
+  border-left: 3px solid #5BB8B8;
+}
+.section-box-salmon {
+  border-left: 3px solid #E8998D;
+}
+.section-box-danger {
+  border-left: 3px solid #C0392B;
+}
+.section-box-success {
+  border-left: 3px solid #1E8449;
+}
+
 /* ── Handout Reader Theme ─────────────────────── */
 .handout-reader {
   background: #2C3E50;
