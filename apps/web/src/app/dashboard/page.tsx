@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
 import { api } from "@convex/_generated/api";
@@ -19,12 +19,56 @@ export default function DashboardPage() {
   const deleteHandout = useMutation(api.handouts.deleteHandout);
   const createSession = useMutation(api.sessions.createSession);
   const deleteSession = useMutation(api.sessions.deleteSession);
+  const deleteSessions = useMutation(api.sessions.deleteSessions);
+  const reopenSession = useMutation(api.sessions.reopenSession);
 
   const [activeTab, setActiveTab] = useState<"handouts" | "sessions">("handouts");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newHandoutTitle, setNewHandoutTitle] = useState("");
   const [newHandoutDesc, setNewHandoutDesc] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const [selectedSessions, setSelectedSessions] = useState<Set<string>>(new Set());
+
+  const toggleSession = useCallback((id: string) => {
+    setSelectedSessions((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const toggleAllSessions = useCallback(() => {
+    if (!sessions) return;
+    setSelectedSessions((prev) =>
+      prev.size === sessions.length ? new Set() : new Set(sessions.map((s) => s._id))
+    );
+  }, [sessions]);
+
+  // Prune selectedSessions whenever sessions changes (e.g. after per-row delete or refetch)
+  useEffect(() => {
+    if (!sessions) return;
+    const currentIds = new Set<string>(sessions.map((s) => s._id));
+    setSelectedSessions((prev) => {
+      const pruned = new Set<string>();
+      prev.forEach((id) => { if (currentIds.has(id)) pruned.add(id); });
+      return pruned;
+    });
+  }, [sessions]);
+
+  const handleBulkDelete = async () => {
+    if (!token || selectedSessions.size === 0) return;
+    if (!confirm(`${selectedSessions.size} Session(s) löschen?`)) return;
+    await deleteSessions({
+      token,
+      sessionIds: [...selectedSessions] as Id<"presentationSessions">[],
+    });
+    setSelectedSessions(new Set());
+  };
+
+  const handleReopenSession = async (sessionId: string) => {
+    if (!token) return;
+    await reopenSession({ token, sessionId: sessionId as Id<"presentationSessions"> });
+  };
 
   const counts = useMemo(() => {
     const allHandouts = handouts ?? [];
@@ -181,6 +225,26 @@ export default function DashboardPage() {
               Mehrere Live-Sessions für dasselbe Handout aktiv — beenden Sie nicht benötigte Sessions.
             </div>
           )}
+
+          {sessions && sessions.length > 0 && (
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2 text-sm cursor-pointer" style={{ color: "var(--ink-soft)" }}>
+                <input
+                  type="checkbox"
+                  className="h-4 w-4"
+                  checked={selectedSessions.size === sessions.length}
+                  onChange={toggleAllSessions}
+                />
+                Alle auswählen
+              </label>
+              {selectedSessions.size > 0 && (
+                <button className="btn-danger text-xs px-3 py-1.5" onClick={handleBulkDelete} disabled={isDemo}>
+                  {selectedSessions.size} löschen
+                </button>
+              )}
+            </div>
+          )}
+
           {!sessions ? (
             <div className="py-12 text-center text-sm" style={{ color: "var(--ink-muted)" }}>Lädt…</div>
           ) : sessions.length === 0 ? (
@@ -194,6 +258,13 @@ export default function DashboardPage() {
             sessions.map((s) => (
               <div key={s._id} className="card flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 flex-shrink-0"
+                    checked={selectedSessions.has(s._id)}
+                    onChange={() => toggleSession(s._id)}
+                    aria-label={`Session ${s.publicToken} auswählen`}
+                  />
                   {statusBadge(s.status)}
                   <div>
                     <div className="font-medium">
@@ -205,6 +276,11 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <div className="flex gap-2">
+                  {s.status === "ended" && (
+                    <button className="btn-secondary" onClick={() => handleReopenSession(s._id)} disabled={isDemo}>
+                      Wieder öffnen
+                    </button>
+                  )}
                   <button className="btn-primary" onClick={() => router.push(`/dashboard/session/${s._id}`)}>
                     Öffnen
                   </button>

@@ -270,8 +270,9 @@
 .markdown-content h2 { @apply mb-3 mt-5 text-xl font-bold; color: var(--ink); }
 .markdown-content h3 { @apply mb-2 mt-4 text-lg font-semibold; color: var(--ink); }
 .markdown-content p { @apply mb-4 leading-7; color: var(--ink-soft); }
-.markdown-content ul { @apply mb-4 list-disc space-y-1 pl-5; color: var(--ink-soft); }
-.markdown-content ol { @apply mb-4 list-decimal space-y-1 pl-5; color: var(--ink-soft); }
+.markdown-content ul { @apply mb-4 list-disc space-y-1.5 pl-5; color: var(--ink-soft); }
+.markdown-content ol { @apply mb-4 list-decimal space-y-1.5 pl-5; color: var(--ink-soft); }
+.markdown-content li { @apply leading-7; }
 .markdown-content blockquote {
   @apply my-4 rounded-lg px-4 py-3;
   border-left: 3px solid var(--accent);
@@ -284,25 +285,274 @@
   color: var(--accent-text);
 }
 .markdown-content pre {
-  @apply mb-4 overflow-x-auto rounded-lg p-4 text-sm;
-  background: #1E293B;
-  color: #E2E8F0;
+  @apply relative mb-5 overflow-x-auto rounded-xl text-sm leading-relaxed;
+
+  background: #1E2A38;
+  color: #F2F2F7;
+  padding: 2.5rem 1.25rem 1.25rem;
 }
-.dark .markdown-content pre { background: #0F172A; }
-.markdown-content pre code { @apply bg-transparent p-0 font-normal; color: inherit; }
-.markdown-content table { @apply mb-4 w-full border-collapse; }
+.markdown-content pre::before {
+  content: "";
+  position: absolute;
+  top: 0.75rem;
+  left: 1rem;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: #FF5F57;
+  box-shadow: 0.85rem 0 0 #FEBC2E, 1.7rem 0 0 #28C840;
+}
+.dark .markdown-content pre { background: #0F1923; }
+.markdown-content pre code {
+  @apply bg-transparent p-0 font-normal;
+
+  color: inherit;
+  font-family: "SF Mono", "Fira Code", "JetBrains Mono", ui-monospace, monospace;
+}
+.markdown-content table { @apply mb-5 w-full border-collapse overflow-hidden rounded-lg; }
 .markdown-content th {
-  @apply px-3 py-2 text-left text-sm font-semibold;
+  @apply px-4 py-2.5 text-left text-sm font-semibold;
+
   background: var(--paper-alt);
   border-bottom: 2px solid var(--line);
 }
 .markdown-content td {
-  @apply px-3 py-2 text-sm;
+  @apply px-4 py-2.5 text-sm;
+
   border-bottom: 1px solid var(--line);
   color: var(--ink-soft);
 }
 .markdown-content strong { color: var(--ink); font-weight: 600; }
 .markdown-content a { color: var(--accent-text); text-decoration: underline; }
+.markdown-content hr {
+  @apply my-6;
+
+  border: none;
+  height: 2px;
+  background: #E8998D;
+}
+
+/* ── Terminal Window ───────────────────────────── */
+.terminal-window {
+  @apply relative overflow-hidden rounded-xl;
+
+  background: #1E2A38;
+  border: 1px solid rgba(255,255,255,0.06);
+  font-family: "SF Mono", "Fira Code", "JetBrains Mono", "Cascadia Code", ui-monospace, monospace;
+}
+.terminal-variant-label {
+  @apply px-4 pt-3 text-xs font-bold uppercase tracking-[0.18em];
+}
+.terminal-titlebar {
+  @apply flex items-center gap-3 px-4 py-2.5;
+
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.terminal-dots { @apply flex items-center gap-1.5; }
+.terminal-dot {
+  @apply block h-[0.6rem] w-[0.6rem] rounded-full;
+
+  position: relative;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+.terminal-dot-red { background: #FF5F57; }
+.terminal-dot-yellow { background: #FEBC2E; }
+.terminal-dot-green { background: #28C840; }
+.terminal-title {
+  @apply text-xs;
+
+  color: rgba(255,255,255,0.4);
+}
+.terminal-body {
+  @apply overflow-x-auto p-4 text-sm leading-relaxed;
+
+  background: transparent !important;
+  color: #F2F2F7;
+  margin: 0;
+  border-radius: 0;
+  padding-top: 1rem;
+}
+.terminal-body::before { display: none; }
+.terminal-body code {
+  @apply bg-transparent p-0;
+
+  color: inherit;
+  font-family: inherit;
+}
+.terminal-cursor {
+  @apply inline-block;
+
+  color: #5AC8FA;
+  animation: cursor-blink 0.8s steps(2) infinite;
+}
+.terminal-cursor-idle {
+  animation: cursor-blink-idle 1.2s ease-in-out infinite;
+}
+@keyframes cursor-blink {
+  0% { opacity: 1; }
+  50% { opacity: 0; }
+  100% { opacity: 1; }
+}
+@keyframes cursor-blink-idle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* macOS dot hover animations */
+.terminal-dot-hover {
+  transform: scale(1.15);
+  filter: brightness(1.15);
+}
+.terminal-dot-icon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.45rem;
+  font-weight: 700;
+  color: rgba(0,0,0,0.65);
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* Flash notification when new content arrives in background tab */
+@keyframes terminal-flash-anim {
+  0%   { box-shadow: 0 0 0 0 rgba(91,184,184,0); border-color: inherit; }
+  20%  { box-shadow: 0 0 0 4px rgba(91,184,184,0.4); border-color: rgba(91,184,184,0.6); }
+  60%  { box-shadow: 0 0 0 4px rgba(91,184,184,0.4); border-color: rgba(91,184,184,0.6); }
+  100% { box-shadow: 0 0 0 0 rgba(91,184,184,0); border-color: inherit; }
+}
+.terminal-flash {
+  animation: terminal-flash-anim 1.5s ease-in-out 2;
+}
+
+/* ── Callout Box ──────────────────────────────── */
+.callout-box {
+  @apply my-5 rounded-xl p-5;
+  background: rgba(232,153,141,0.08);
+  border-left: 3px solid #E8998D;
+}
+.handout-reader .callout-box {
+  background: rgba(232,153,141,0.1);
+  border-left-color: #E8998D;
+}
+.callout-box p { margin-bottom: 0.5rem; }
+.callout-box p:last-child { margin-bottom: 0; }
+
+/* ── Grid Layouts (HTML in markdown via rehype-raw) ── */
+.grid-2 {
+  @apply my-5 grid gap-4;
+  grid-template-columns: 1fr 1fr;
+}
+@media (max-width: 640px) {
+  .grid-2 { grid-template-columns: 1fr; }
+}
+.grid-2 > div {
+  @apply rounded-xl p-5;
+}
+.handout-reader .grid-2 > div {
+  background: #34495E;
+}
+
+/* ── Stat Numbers ─────────────────────────────── */
+.stat {
+  @apply text-4xl font-bold leading-none sm:text-5xl;
+  font-family: var(--font-display), system-ui, sans-serif;
+  color: #FFFFFF;
+}
+.stat-label {
+  @apply mt-1 text-sm;
+  color: rgba(255,255,255,0.6);
+}
+
+/* ── Section Box (dark themed content card) ──── */
+.section-box {
+  @apply my-5 rounded-xl p-5;
+}
+.handout-reader .section-box {
+  background: #34495E;
+}
+.section-box-teal {
+  border-left: 3px solid #5BB8B8;
+}
+.section-box-salmon {
+  border-left: 3px solid #E8998D;
+}
+.section-box-danger {
+  border-left: 3px solid #C0392B;
+}
+.section-box-success {
+  border-left: 3px solid #1E8449;
+}
+
+/* ── Handout Reader Theme ─────────────────────── */
+.handout-reader {
+  background: #2C3E50;
+  color: #F2F2F7;
+  min-height: 100vh;
+}
+.handout-reader .page-hero {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+.handout-reader .page-title { color: #FFFFFF; }
+.handout-reader .page-copy { color: rgba(255,255,255,0.7); }
+.handout-reader .eyebrow { color: #E8998D; }
+.handout-reader .kicker-pill {
+  background: rgba(232,153,141,0.15);
+  color: #E8998D;
+}
+.handout-reader .handout-block {
+  background: #34495E;
+  border: none;
+  box-shadow: none;
+  color: #F2F2F7;
+}
+.handout-reader .handout-block h2 {
+  color: #FFFFFF;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.handout-reader .handout-block .eyebrow { color: #5BB8B8; }
+.handout-reader .handout-block .block-number {
+  background: #5BB8B8 !important;
+}
+.handout-reader .markdown-content h1,
+.handout-reader .markdown-content h2,
+.handout-reader .markdown-content h3 { color: #FFFFFF; }
+.handout-reader .markdown-content p,
+.handout-reader .markdown-content li { color: rgba(255,255,255,0.85); }
+.handout-reader .markdown-content strong { color: #FFFFFF; }
+.handout-reader .markdown-content a { color: #5BB8B8; }
+.handout-reader .markdown-content code {
+  background: rgba(255,255,255,0.08);
+  color: #5AC8FA;
+}
+.handout-reader .markdown-content blockquote {
+  background: rgba(232,153,141,0.1);
+  border-left-color: #E8998D;
+  color: rgba(255,255,255,0.8);
+}
+.handout-reader .markdown-content hr {
+  background: #E8998D;
+}
+.handout-reader .markdown-content table { border: 1px solid rgba(255,255,255,0.1); }
+.handout-reader .markdown-content th {
+  background: rgba(255,255,255,0.06);
+  border-bottom-color: rgba(255,255,255,0.15);
+  color: #FFFFFF;
+}
+.handout-reader .markdown-content td {
+  border-bottom-color: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.8);
+}
+.handout-reader .empty-state {
+  background: #34495E;
+  border: 1px dashed rgba(255,255,255,0.2);
+}
+.handout-reader footer { color: rgba(255,255,255,0.35) !important; }
 
 /* ── Keyframes ─────────────────────────────────── */
 @keyframes fade-up {

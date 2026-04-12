@@ -32,7 +32,7 @@ export default function HomePage() {
           <Link href="/auth/register" className="btn-primary px-6 py-3 text-base">
             Jetzt ausprobieren
           </Link>
-          <Link href="/auth/login" className="btn-secondary px-6 py-3 text-base">
+          <Link href="/auth/demo" className="btn-secondary px-6 py-3 text-base">
             Demo ansehen
           </Link>
         </div>
