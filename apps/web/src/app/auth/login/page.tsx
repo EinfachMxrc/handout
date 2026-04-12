@@ -27,11 +27,10 @@ export default function LoginPage() {
     }
 
     setIsLoading(true);
-
     try {
       const timeout = new Promise<never>((_, reject) =>
         setTimeout(
-          () => reject(new Error("Zeitüberschreitung - bitte erneut versuchen")),
+          () => reject(new Error("Zeitüberschreitung — bitte erneut versuchen")),
           CONVEX_MUTATION_TIMEOUT_MS
         )
       );
@@ -46,103 +45,72 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="page-shell flex min-h-screen items-center py-10">
-      <div className="grid w-full gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-        <section className="page-hero flex flex-col justify-between">
-          <div>
-            <span className="kicker-pill">Presenter access</span>
-            <h1 className="page-title max-w-2xl text-5xl sm:text-6xl">
-              Melden Sie sich an und führen Sie das Publikum strukturiert durch den Vortrag.
-            </h1>
-            <p className="page-copy max-w-xl">
-              Das Dashboard, die Session-Steuerung und das PowerPoint-Add-in
-              teilen sich denselben Presenter-Login. Nach dem Sign-in landen Sie
-              direkt in Ihrer Arbeitsfläche.
-            </p>
+    <div className="flex min-h-screen">
+      {/* Left: Info */}
+      <div className="hidden w-1/2 flex-col justify-between p-10 lg:flex" style={{ background: "var(--accent)", color: "#fff" }}>
+        <Link href="/" className="text-lg font-bold">Slide Handout</Link>
+        <div className="max-w-md">
+          <h1 className="text-4xl font-bold leading-tight" style={{ color: "#fff" }}>
+            Willkommen zurück.
+          </h1>
+          <p className="mt-4 text-base leading-relaxed" style={{ color: "rgba(255,255,255,0.8)" }}>
+            Melden Sie sich an, um Ihre Handouts zu verwalten, Sessions zu steuern
+            und Ihr Publikum live zu begleiten.
+          </p>
+        </div>
+        <div className="rounded-lg p-4" style={{ background: "rgba(255,255,255,0.1)" }}>
+          <div className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.7)" }}>Demo-Zugang</div>
+          <div className="mt-1 text-sm">
+            <code>demo@example.com</code> / <code>demo1234</code>
           </div>
+          <p className="mt-2 text-sm" style={{ color: "rgba(255,255,255,0.6)" }}>
+            Schreibgeschützter Einblick in alle Funktionen.
+          </p>
+        </div>
+      </div>
 
-          <div className="mt-10 grid gap-4 sm:grid-cols-2">
-            <div className="metric-card">
-              <div className="metric-label">Demo</div>
-              <div className="mt-3 text-base font-semibold">demo@example.com</div>
-              <p className="mt-2 text-sm leading-6 text-stone-600">
-                Demo-Zugang für einen schnellen Blick auf den Reader und die Session-Oberflächen.
-              </p>
-            </div>
-            <div className="metric-card">
-              <div className="metric-label">Sicherheit</div>
-              <div className="mt-3 text-base font-semibold">Demo bleibt read-only</div>
-              <p className="mt-2 text-sm leading-6 text-stone-600">
-                Der gemeinsame Demo-Account kann keine Inhalte verändern oder Live-Logik manipulieren.
-              </p>
-            </div>
-          </div>
-        </section>
+      {/* Right: Form */}
+      <div className="flex w-full flex-col justify-center px-6 py-12 lg:w-1/2 lg:px-16">
+        <div className="mx-auto w-full max-w-sm">
+          <Link href="/" className="text-sm font-medium lg:hidden" style={{ color: "var(--accent-text)" }}>
+            ← Zurück zur Startseite
+          </Link>
 
-        <section className="card self-center p-8 sm:p-10">
-          <div className="mb-8">
-            <div className="eyebrow">Anmeldung</div>
-            <h2 className="mt-3 text-4xl">Presenter-Dashboard</h2>
-            <p className="page-copy mt-2 max-w-none">
-              Nutzen Sie denselben Zugang für Dashboard, Session-Steuerung und Add-in.
-            </p>
-          </div>
+          <h2 className="mt-6 text-2xl font-bold lg:mt-0">Anmelden</h2>
+          <p className="mt-2 text-sm" style={{ color: "var(--ink-soft)" }}>
+            Zugang zu Dashboard, Sessions und PowerPoint-Add-in.
+          </p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="mt-8 space-y-4">
             <div>
-              <label className="label" htmlFor="email">
-                E-Mail
-              </label>
-              <input
-                id="email"
-                type="email"
-                className="input"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="ihre@email.de"
-                required
-                autoFocus
-              />
+              <label className="label" htmlFor="email">E-Mail</label>
+              <input id="email" type="email" className="input" value={email}
+                onChange={(e) => setEmail(e.target.value)} placeholder="ihre@email.de" required autoFocus />
             </div>
-
             <div>
-              <label className="label" htmlFor="password">
-                Passwort
-              </label>
-              <input
-                id="password"
-                type="password"
-                className="input"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="mindestens 8 Zeichen"
-                required
-              />
+              <label className="label" htmlFor="password">Passwort</label>
+              <input id="password" type="password" className="input" value={password}
+                onChange={(e) => setPassword(e.target.value)} placeholder="Mindestens 8 Zeichen" required />
             </div>
 
             {error && (
-              <div className="rounded-[22px] border border-red-300/40 bg-red-50/90 px-4 py-3 text-sm text-red-700">
+              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/50 dark:text-red-300">
                 {error}
               </div>
             )}
 
             <button type="submit" className="btn-primary w-full" disabled={isLoading}>
-              {isLoading ? "Wird angemeldet..." : "Anmelden"}
+              {isLoading ? "Wird angemeldet…" : "Anmelden"}
             </button>
           </form>
 
-          <div className="mt-6 flex flex-col gap-3 text-sm text-stone-600 sm:flex-row sm:items-center sm:justify-between">
-            <span>
-              Noch kein Konto?{" "}
-              <Link href="/auth/register" className="font-semibold text-stone-900 underline decoration-stone-300">
-                Registrieren
-              </Link>
-            </span>
-            <Link href="/" className="text-stone-500 underline decoration-stone-300">
-              Zur Startseite
+          <p className="mt-6 text-center text-sm" style={{ color: "var(--ink-muted)" }}>
+            Noch kein Konto?{" "}
+            <Link href="/auth/register" className="font-medium" style={{ color: "var(--accent-text)" }}>
+              Jetzt registrieren
             </Link>
-          </div>
-        </section>
+          </p>
+        </div>
       </div>
     </div>
   );

@@ -63,7 +63,7 @@ export default function PublicHandoutPage() {
       <div className="page-shell flex min-h-screen items-center justify-center py-10">
         <div className="section-panel text-center">
           <div className="eyebrow">Reader</div>
-          <p className="mt-4 text-base text-stone-600">Lade Handout...</p>
+          <p className="mt-4 text-base" style={{ color: "var(--ink-soft)" }}>Lade Handout…</p>
         </div>
       </div>
     );
@@ -84,9 +84,9 @@ export default function PublicHandoutPage() {
   }
 
   const statusInfo = {
-    draft: { color: "border-amber-500/20 bg-amber-50/90 text-amber-800", label: "Noch nicht gestartet" },
-    live: { color: "border-emerald-500/20 bg-emerald-50/90 text-emerald-800", label: "Live" },
-    ended: { color: "border-stone-500/15 bg-stone-100/80 text-stone-700", label: "Beendet" },
+    draft: { color: "border-amber-500/20 bg-amber-50/90 text-amber-800 dark:border-amber-500/30 dark:bg-amber-950/40 dark:text-amber-300", label: "Noch nicht gestartet" },
+    live: { color: "border-emerald-500/20 bg-emerald-50/90 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-950/40 dark:text-emerald-300", label: "Live" },
+    ended: { color: "border-slate-500/15 bg-slate-100/80 text-slate-700 dark:border-slate-500/20 dark:bg-slate-800/40 dark:text-slate-300", label: "Beendet" },
   };
 
   const status = statusInfo[sessionInfo.status as keyof typeof statusInfo] ?? statusInfo.ended;
@@ -112,7 +112,7 @@ export default function PublicHandoutPage() {
         <header className="page-hero no-print">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <span className="kicker-pill">Public reader</span>
+              <span className="kicker-pill">Öffentlicher Reader</span>
               <h1 className="page-title mt-4 text-5xl">{sessionInfo.handoutTitle}</h1>
               {sessionInfo.handoutDescription && (
                 <p className="page-copy max-w-2xl">{sessionInfo.handoutDescription}</p>
@@ -120,7 +120,7 @@ export default function PublicHandoutPage() {
             </div>
 
             <div className="flex flex-wrap gap-3">
-              <span className={`rounded-full border px-4 py-2 text-sm font-semibold ${status.color}`}>
+              <span className={`rounded-lg border px-4 py-2 text-sm font-semibold ${status.color}`}>
                 {status.label}
               </span>
               <button onClick={handlePrint} className="btn-secondary">
@@ -130,7 +130,7 @@ export default function PublicHandoutPage() {
           </div>
 
           {sessionInfo.status === "live" && (
-            <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-50/80 px-4 py-2 text-sm text-emerald-800">
+            <div className="mt-6 inline-flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-50/80 px-4 py-2 text-sm text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-950/40 dark:text-emerald-300">
               <span className="h-2 w-2 rounded-full bg-emerald-500" />
               Folie {sessionInfo.currentSlide}
               {sessionInfo.presentationTitle ? ` · ${sessionInfo.presentationTitle}` : ""}
@@ -155,9 +155,9 @@ export default function PublicHandoutPage() {
               return (
                 <article
                   key={block.id}
-                  className={`handout-block card ${isNew ? "ring-2 ring-emerald-200" : ""}`}
+                  className={`handout-block card ${isNew ? "ring-2 ring-emerald-300 dark:ring-emerald-500" : ""}`}
                 >
-                  <div className="eyebrow">Reader block</div>
+                  <div className="eyebrow">Abschnitt</div>
                   <h2 className="mt-3 text-4xl">{block.title}</h2>
                   <div className="markdown-content mt-5 text-base">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{block.content}</ReactMarkdown>
@@ -168,7 +168,7 @@ export default function PublicHandoutPage() {
           )}
         </main>
 
-        <footer className="no-print pt-8 text-center text-xs uppercase tracking-[0.18em] text-stone-500">
+        <footer className="no-print pt-8 text-center text-xs uppercase tracking-widest" style={{ color: "var(--ink-muted)" }}>
           Slide Handout · {footerText}
         </footer>
       </div>

@@ -23,14 +23,14 @@ export function QRCodeDialog({ isOpen, onClose, publicUrl, handoutTitle }: QRCod
       <div className="space-y-5 text-center">
         <div>
           <div className="eyebrow">Öffentliche Leseransicht</div>
-          <p className="mt-3 text-lg font-semibold text-stone-900">{handoutTitle}</p>
+          <p className="mt-3 text-lg font-semibold">{handoutTitle}</p>
         </div>
 
-        <div className="flex justify-center rounded-[28px] border border-stone-900/8 bg-white/80 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+        <div className="flex justify-center rounded-2xl p-5" style={{ border: "1px solid var(--line)", background: "var(--paper-strong)" }}>
           <QRCodeSVG value={fullUrl} size={200} />
         </div>
 
-        <div className="rounded-[24px] border border-stone-900/8 bg-stone-100/70 px-4 py-3 text-left font-mono text-sm break-all text-stone-700">
+        <div className="rounded-2xl px-4 py-3 text-left font-mono text-sm break-all" style={{ border: "1px solid var(--line)", background: "var(--paper)", color: "var(--ink-soft)" }}>
           {fullUrl}
         </div>
 

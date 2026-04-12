@@ -90,7 +90,7 @@ export default function SessionPage() {
   const [activeView, setActiveView] = useState<"control" | "preview">("control");
 
   if (!data) {
-    return <div className="section-panel text-center text-stone-500">Lädt Session...</div>;
+    return <div className="section-panel text-center" style={{ color: "var(--ink-muted)" }}>Lädt Session…</div>;
   }
 
   const { session, handout, blocks } = data;
@@ -117,21 +117,21 @@ export default function SessionPage() {
       {isDemo && (
         <div className="soft-note">
           Demo-Modus: Session-Steuerung, Live-Freischaltungen und Add-in-Verbindung
-          sind für den frei zugänglichen Demo-Account deaktiviert.
+          sind für den Demo-Account deaktiviert.
         </div>
       )}
 
       <section className="page-hero">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <div className="flex flex-wrap items-center gap-2 text-sm text-stone-500">
-              <Link href="/dashboard" className="underline decoration-stone-300">
+            <div className="flex flex-wrap items-center gap-2 text-sm" style={{ color: "var(--ink-muted)" }}>
+              <Link href="/dashboard" className="underline" style={{ textDecorationColor: "var(--accent)" }}>
                 Dashboard
               </Link>
               <span>/</span>
               {handout && (
                 <>
-                  <Link href={`/dashboard/handout/${session.handoutId}`} className="underline decoration-stone-300">
+                  <Link href={`/dashboard/handout/${session.handoutId}`} className="underline" style={{ textDecorationColor: "var(--accent)" }}>
                     {handout.title}
                   </Link>
                   <span>/</span>
@@ -148,8 +148,8 @@ export default function SessionPage() {
             </div>
 
             <p className="page-copy max-w-2xl">
-              Steuern Sie Folienstand, manuelle Reveal-Blocks, QR-Zugang und
-              PowerPoint-Anbindung von einer kompakten Session-Oberfläche aus.
+              Folienstand, manuelle Blöcke, QR-Zugang und PowerPoint-Anbindung
+              — alles von einer kompakten Session-Oberfläche aus steuern.
             </p>
           </div>
 
@@ -191,7 +191,7 @@ export default function SessionPage() {
         <div className="mt-8 grid gap-4 md:grid-cols-3">
           <div className="metric-card">
             <div className="metric-label">Öffentlicher Link</div>
-            <div className="mt-3 truncate text-sm font-semibold text-stone-900">{fullPublicUrl}</div>
+            <div className="mt-3 truncate text-sm font-semibold">{fullPublicUrl}</div>
           </div>
           <div className="metric-card">
             <div className="metric-label">Zuschauer</div>
@@ -200,7 +200,7 @@ export default function SessionPage() {
             </div>
           </div>
           <div className="metric-card">
-            <div className="metric-label">Sichtbare Blocks</div>
+            <div className="metric-label">Sichtbare Blöcke</div>
             <div className="metric-value">{visibleBlocks.length}</div>
           </div>
         </div>
@@ -224,11 +224,11 @@ export default function SessionPage() {
           <section className="section-panel">
             <div className="mb-5 flex items-center justify-between gap-3">
               <div>
-                <div className="eyebrow">Session control</div>
-                <h2 className="mt-3 text-4xl">Folien-Steuerung</h2>
+                <div className="eyebrow">Session-Steuerung</div>
+                <h2 className="mt-3 text-4xl">Folien-Navigation</h2>
               </div>
               {session.status === "live" && isViewerCountLoaded && (
-                <div className="rounded-full border border-emerald-500/20 bg-emerald-50/90 px-3 py-2 text-sm text-emerald-800">
+                <div className="rounded-lg border border-emerald-500/20 bg-emerald-50/90 px-3 py-2 text-sm text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-950/40 dark:text-emerald-300">
                   {viewerCount} Zuschauer aktiv
                 </div>
               )}
@@ -247,14 +247,13 @@ export default function SessionPage() {
             <h2 className="mt-3 text-4xl">Add-in und Live-Verbindung</h2>
             {isDemo ? (
               <p className="page-copy">
-                Im Demo-Modus bleibt die Presenter-Steuerung im PowerPoint Add-in deaktiviert.
+                Im Demo-Modus ist die Presenter-Steuerung im PowerPoint-Add-in deaktiviert.
               </p>
             ) : (
               <>
                 <p className="page-copy">
-                  Das Add-in wird über dieselbe Web-App ausgeliefert. Nach der
-                  Installation melden Sie sich im Taskpane an und wählen dort
-                  diese Session aus.
+                  Das Add-in läuft über dieselbe Web-App. Nach der Installation
+                  melden Sie sich im Taskpane an und wählen dort diese Session aus.
                 </p>
                 <div className="mt-5 flex flex-wrap gap-3">
                   <a href="/powerpoint" className="btn-primary">
@@ -277,19 +276,20 @@ export default function SessionPage() {
               {blocks.map((block) => (
                 <div
                   key={block._id}
-                  className={`rounded-[24px] border p-4 transition-colors ${
+                  className={`rounded-2xl border p-4 transition-colors ${
                     block.isVisible
-                      ? "border-emerald-500/18 bg-emerald-50/70"
-                      : "border-stone-900/8 bg-white/60"
+                      ? "border-emerald-500/20 bg-emerald-50/70 dark:border-emerald-500/30 dark:bg-emerald-950/30"
+                      : ""
                   }`}
+                  style={!block.isVisible ? { borderColor: "var(--line)", background: "var(--paper)" } : undefined}
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className={`h-2.5 w-2.5 rounded-full ${block.isVisible ? "bg-emerald-500" : "bg-stone-300"}`} />
-                        <h3 className="text-lg font-semibold text-stone-900">{block.title}</h3>
+                        <span className={`h-2.5 w-2.5 rounded-full ${block.isVisible ? "bg-emerald-500" : "bg-slate-300 dark:bg-slate-600"}`} />
+                        <h3 className="text-lg font-semibold">{block.title}</h3>
                       </div>
-                      <p className="mt-2 text-sm text-stone-600">
+                      <p className="mt-2 text-sm" style={{ color: "var(--ink-soft)" }}>
                         {block.revealRule.alwaysVisible
                           ? "Immer sichtbar"
                           : block.revealRule.manuallyTriggered
@@ -330,18 +330,18 @@ export default function SessionPage() {
         {activeView === "preview" && (
           <section className="section-panel">
             <div className="mb-5">
-              <div className="eyebrow">Live reader</div>
-              <h2 className="mt-3 text-4xl">Vorschau für Zuschauer</h2>
+              <div className="eyebrow">Live-Vorschau</div>
+              <h2 className="mt-3 text-4xl">Ansicht für Zuschauer</h2>
             </div>
 
             <div className="space-y-4">
               {visibleBlocks.length === 0 && (
-                <div className="rounded-[24px] border border-dashed border-stone-900/12 bg-white/55 px-5 py-8 text-center text-sm text-stone-500">
+                <div className="rounded-2xl border border-dashed px-5 py-8 text-center text-sm" style={{ borderColor: "var(--line-strong)", color: "var(--ink-muted)" }}>
                   Noch keine Inhalte freigeschaltet.
                 </div>
               )}
               {visibleBlocks.map((block) => (
-                <article key={block._id} className="rounded-[24px] border border-stone-900/8 bg-white/72 p-5">
+                <article key={block._id} className="rounded-2xl border p-5" style={{ borderColor: "var(--line)", background: "var(--paper)" }}>
                   <h3 className="text-2xl">{block.title}</h3>
                   <div className="markdown-content mt-4">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{block.content}</ReactMarkdown>

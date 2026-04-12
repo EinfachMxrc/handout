@@ -32,12 +32,12 @@ export default function HandoutPrintPage() {
     if (rule.manuallyTriggered) return "Manuell";
     let label = `Ab Folie ${rule.revealSlide}`;
     if (rule.revealToSlide) label += `-${rule.revealToSlide}`;
-    if (rule.relockOnBack) label += " rücksperrend";
+    if (rule.relockOnBack) label += " (rücksperrend)";
     return label;
   };
 
   if (!data) {
-    return <div className="p-8 text-stone-500">Lädt...</div>;
+    return <div className="p-8" style={{ color: "var(--ink-muted)" }}>Lädt…</div>;
   }
 
   const blocks = [...data.blocks].sort((a, b) => a.order - b.order);
@@ -52,7 +52,7 @@ export default function HandoutPrintPage() {
         }
       `}</style>
 
-      <div className="no-print border-b border-stone-200 bg-stone-50/95 px-6 py-4 backdrop-blur">
+      <div className="no-print border-b px-6 py-4" style={{ borderColor: "var(--line)", background: "var(--paper)" }}>
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link href={`/dashboard/handout/${handoutId}`} className="btn-secondary">
@@ -60,7 +60,7 @@ export default function HandoutPrintPage() {
             </Link>
             <div>
               <div className="eyebrow">Druckansicht</div>
-              <div className="text-sm text-stone-600">Alle Blocks in Editor-Reihenfolge</div>
+              <div className="text-sm" style={{ color: "var(--ink-soft)" }}>Alle Blöcke in Editor-Reihenfolge</div>
             </div>
           </div>
           <button onClick={() => window.print()} className="btn-primary">
@@ -70,10 +70,10 @@ export default function HandoutPrintPage() {
       </div>
 
       <div className="mx-auto max-w-4xl px-6 py-10">
-        <header className="mb-8 border-b border-stone-200 pb-6">
+        <header className="mb-8 border-b pb-6" style={{ borderColor: "var(--line)" }}>
           <h1 className="text-5xl">{data.title}</h1>
-          {data.description && <p className="mt-3 max-w-2xl text-base text-stone-600">{data.description}</p>}
-          <p className="mt-4 text-xs uppercase tracking-[0.18em] text-stone-500 no-print">
+          {data.description && <p className="mt-3 max-w-2xl text-base" style={{ color: "var(--ink-soft)" }}>{data.description}</p>}
+          <p className="mt-4 text-xs uppercase tracking-widest no-print" style={{ color: "var(--ink-muted)" }}>
             {blocks.length} Blöcke · Reveal-Regeln als Badge sichtbar
           </p>
         </header>
@@ -83,7 +83,7 @@ export default function HandoutPrintPage() {
             <article key={block._id} className="handout-block">
               <div className="mb-3 flex flex-wrap items-center gap-2">
                 <span className="eyebrow no-print">Block {idx + 1}</span>
-                <span className="rounded-full border border-stone-900/10 bg-stone-100/70 px-3 py-1 text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-stone-700">
+                <span className="rounded-lg border px-3 py-1 text-[0.72rem] font-semibold uppercase tracking-widest" style={{ borderColor: "var(--line)", background: "var(--paper)", color: "var(--ink-soft)" }}>
                   {revealLabel(block.revealRule)}
                 </span>
               </div>
@@ -91,7 +91,7 @@ export default function HandoutPrintPage() {
               <div className="markdown-content mt-4">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{block.content}</ReactMarkdown>
               </div>
-              {idx < blocks.length - 1 && <hr className="mt-8 border-stone-200" />}
+              {idx < blocks.length - 1 && <hr className="mt-8" style={{ borderColor: "var(--line)" }} />}
             </article>
           ))}
         </div>

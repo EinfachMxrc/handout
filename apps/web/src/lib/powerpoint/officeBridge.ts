@@ -182,10 +182,10 @@ export function getCurrentSlideInfo(): Promise<OfficeSlideInfo | null> {
       return;
     }
 
-    const rawTitle = Office.context.document.url ?? "Praesentation";
+    const rawTitle = Office.context.document.url ?? "Präsentation";
     const presentationTitle =
       rawTitle.split(/[/\\]/).pop()?.replace(/\.pptx?$/i, "") ??
-      "Praesentation";
+      "Präsentation";
 
     try {
       Office.context.document.getSelectedDataAsync(

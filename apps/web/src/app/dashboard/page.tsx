@@ -31,8 +31,8 @@ export default function DashboardPage() {
     const allSessions = sessions ?? [];
     return {
       handouts: allHandouts.length,
-      liveSessions: allSessions.filter((session) => session.status === "live").length,
-      drafts: allSessions.filter((session) => session.status === "draft").length,
+      liveSessions: allSessions.filter((s) => s.status === "live").length,
+      drafts: allSessions.filter((s) => s.status === "draft").length,
     };
   }, [handouts, sessions]);
 
@@ -42,8 +42,7 @@ export default function DashboardPage() {
     setIsCreating(true);
     try {
       const id = await createHandout({
-        token,
-        title: newHandoutTitle.trim(),
+        token, title: newHandoutTitle.trim(),
         description: newHandoutDesc.trim() || undefined,
       });
       setIsCreateOpen(false);
@@ -62,229 +61,162 @@ export default function DashboardPage() {
   };
 
   const statusBadge = (status: string) => {
-    const map: Record<string, "green" | "yellow" | "red" | "gray"> = {
-      live: "green",
-      draft: "yellow",
-      ended: "gray",
-    };
-    const labels: Record<string, string> = {
-      live: "Live",
-      draft: "Entwurf",
-      ended: "Beendet",
-    };
+    const map: Record<string, "green" | "yellow" | "red" | "gray"> = { live: "green", draft: "yellow", ended: "gray" };
+    const labels: Record<string, string> = { live: "Live", draft: "Entwurf", ended: "Beendet" };
     return <Badge variant={map[status] ?? "gray"}>{labels[status] ?? status}</Badge>;
   };
 
   const hasSessionConflicts = useMemo(() => {
     if (!sessions) return false;
     const liveCounts: Record<string, number> = {};
-    sessions.forEach((session) => {
-      if (session.status === "live") {
-        liveCounts[session.handoutId] = (liveCounts[session.handoutId] ?? 0) + 1;
-      }
-    });
-    return Object.values(liveCounts).some((count) => count > 1);
+    sessions.forEach((s) => { if (s.status === "live") liveCounts[s.handoutId] = (liveCounts[s.handoutId] ?? 0) + 1; });
+    return Object.values(liveCounts).some((c) => c > 1);
   }, [sessions]);
 
   return (
-    <div className="space-y-8">
-      <section className="page-hero">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <span className="kicker-pill">Presenter dashboard</span>
-            <h1 className="page-title max-w-4xl text-5xl sm:text-6xl">
-              Verwalten Sie Handouts, Sessions und Ihren gesamten Vortragsfluss.
-            </h1>
-            <p className="page-copy max-w-2xl">
-              Diese Arbeitsfläche ist Ihr Steuerpult für Inhalt, Reveal-Regeln
-              und Live-Freigaben. Handouts werden hier gebaut, Sessions von hier
-              gestartet und öffentliche Leseransichten von hier verteilt.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            <button className="btn-primary" onClick={() => setIsCreateOpen(true)} disabled={isDemo}>
-              Neues Handout
-            </button>
-            <button
-              className="btn-secondary"
-              onClick={() => setActiveTab(activeTab === "handouts" ? "sessions" : "handouts")}
-            >
-              Zu {activeTab === "handouts" ? "Sessions" : "Handouts"}
-            </button>
-          </div>
+    <div className="page-shell py-8 space-y-6">
+      {isDemo && (
+        <div className="soft-note">
+          Demo-Modus: Sie können alles ansehen, aber nichts ändern oder steuern.
         </div>
+      )}
 
-        <div className="mt-8 grid gap-4 md:grid-cols-3">
-          <div className="metric-card">
-            <div className="metric-label">Handouts</div>
-            <div className="metric-value">{counts.handouts}</div>
-          </div>
-          <div className="metric-card">
-            <div className="metric-label">Live-Sessions</div>
-            <div className="metric-value">{counts.liveSessions}</div>
-          </div>
-          <div className="metric-card">
-            <div className="metric-label">Entwürfe</div>
-            <div className="metric-value">{counts.drafts}</div>
-          </div>
+      {/* Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <p className="mt-1 text-sm" style={{ color: "var(--ink-soft)" }}>
+            Ihre Handouts und Sessions auf einen Blick.
+          </p>
         </div>
-      </section>
+        <div className="flex gap-3">
+          <button className="btn-primary" onClick={() => setIsCreateOpen(true)} disabled={isDemo}>
+            Neues Handout
+          </button>
+        </div>
+      </div>
 
+      {/* Stats */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div className="metric-card">
+          <div className="metric-label">Handouts</div>
+          <div className="metric-value">{counts.handouts}</div>
+        </div>
+        <div className="metric-card">
+          <div className="metric-label">Live-Sessions</div>
+          <div className="metric-value">{counts.liveSessions}</div>
+        </div>
+        <div className="metric-card">
+          <div className="metric-label">Entwürfe</div>
+          <div className="metric-value">{counts.drafts}</div>
+        </div>
+      </div>
+
+      {/* Tabs */}
       <div className="segmented-shell">
         {(["handouts", "sessions"] as const).map((tab) => (
-          <button
-            key={tab}
-            className="segmented-button"
-            data-active={activeTab === tab}
-            onClick={() => setActiveTab(tab)}
-          >
+          <button key={tab} className="segmented-button" data-active={activeTab === tab}
+            onClick={() => setActiveTab(tab)}>
             {tab === "handouts" ? "Handouts" : "Sessions"}
           </button>
         ))}
       </div>
 
+      {/* Handouts Tab */}
       {activeTab === "handouts" && (
         <section>
           {!handouts ? (
-            <div className="section-panel text-center text-stone-500">Lädt Handouts...</div>
+            <div className="py-12 text-center text-sm" style={{ color: "var(--ink-muted)" }}>Lädt…</div>
           ) : handouts.length === 0 ? (
             <div className="empty-state">
-              <div className="eyebrow">Noch leer</div>
-              <h2 className="mt-3 text-4xl">Ihr erstes Handout wartet.</h2>
-              <p className="page-copy mx-auto max-w-xl">
-                Legen Sie die Struktur Ihres Vortrags an und definieren Sie pro
-                Block, wann Inhalte sichtbar werden sollen.
+              <h2 className="text-xl font-semibold">Noch keine Handouts</h2>
+              <p className="mt-2 text-sm" style={{ color: "var(--ink-soft)" }}>
+                Erstellen Sie Ihr erstes Handout und legen Sie fest, wann welche Inhalte sichtbar werden.
               </p>
-              <div className="mt-6">
-                <button className="btn-primary" onClick={() => setIsCreateOpen(true)} disabled={isDemo}>
-                  Handout erstellen
-                </button>
-              </div>
+              <button className="btn-primary mt-5" onClick={() => setIsCreateOpen(true)} disabled={isDemo}>
+                Handout erstellen
+              </button>
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {handouts.map((handout) => (
-                <article key={handout._id} className="card flex h-full flex-col justify-between">
+              {handouts.map((h) => (
+                <div key={h._id} className="card flex flex-col justify-between">
                   <div>
-                    <div className="eyebrow">Handout</div>
-                    <h2 className="mt-3 text-3xl leading-tight">{handout.title}</h2>
-                    <p className="mt-3 min-h-[3.5rem] text-sm leading-7 text-stone-600">
-                      {handout.description || "Noch keine Beschreibung hinterlegt."}
+                    <h3 className="text-lg font-semibold">{h.title}</h3>
+                    <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--ink-soft)" }}>
+                      {h.description || "Keine Beschreibung"}
                     </p>
                   </div>
-
-                  <div className="mt-6 space-y-4">
-                    <div className="text-xs uppercase tracking-[0.16em] text-stone-500">
-                      Erstellt am {new Date(handout.createdAt).toLocaleDateString("de-DE")}
+                  <div className="mt-5 space-y-3">
+                    <div className="text-xs" style={{ color: "var(--ink-muted)" }}>
+                      {new Date(h.createdAt).toLocaleDateString("de-DE")}
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      <button
-                        className="btn-primary flex-1"
-                        onClick={() => router.push(`/dashboard/handout/${handout._id}`)}
-                      >
+                      <button className="btn-primary flex-1"
+                        onClick={() => router.push(`/dashboard/handout/${h._id}`)}>
                         {isDemo ? "Ansehen" : "Bearbeiten"}
                       </button>
-                      <button
-                        className="btn-secondary"
-                        onClick={() => handleCreateSession(handout._id)}
-                        disabled={isDemo}
-                      >
+                      <button className="btn-secondary" onClick={() => handleCreateSession(h._id)} disabled={isDemo}>
                         Session
                       </button>
-                      <button
-                        className="btn-danger"
-                        disabled={isDemo}
-                        onClick={() =>
-                          confirm("Handout wirklich löschen?") &&
-                          token &&
-                          deleteHandout({ token, handoutId: handout._id as Id<"handouts"> })
-                        }
-                      >
+                      <button className="btn-danger" disabled={isDemo}
+                        onClick={() => confirm("Handout löschen?") && token &&
+                          deleteHandout({ token, handoutId: h._id as Id<"handouts"> })}>
                         Löschen
                       </button>
                     </div>
                   </div>
-                </article>
+                </div>
               ))}
             </div>
           )}
         </section>
       )}
 
+      {/* Sessions Tab */}
       {activeTab === "sessions" && (
         <section className="space-y-4">
           {hasSessionConflicts && (
             <div className="soft-note">
-              Es laufen mehrere Live-Sessions für dasselbe Handout gleichzeitig.
-              Beenden Sie nicht mehr benötigte Sessions, damit die Freigabelogik
-              eindeutig bleibt.
+              Mehrere Live-Sessions für dasselbe Handout aktiv — beenden Sie nicht benötigte Sessions.
             </div>
           )}
-
           {!sessions ? (
-            <div className="section-panel text-center text-stone-500">Lädt Sessions...</div>
+            <div className="py-12 text-center text-sm" style={{ color: "var(--ink-muted)" }}>Lädt…</div>
           ) : sessions.length === 0 ? (
             <div className="empty-state">
-              <div className="eyebrow">Noch keine Session</div>
-              <h2 className="mt-3 text-4xl">Starten Sie eine Session aus einem Handout.</h2>
-              <p className="page-copy mx-auto max-w-xl">
-                Sobald ein Handout vorbereitet ist, können Sie daraus einen
-                Live-Lesemodus für Publikum und PowerPoint-Steuerung erzeugen.
+              <h2 className="text-xl font-semibold">Keine Sessions</h2>
+              <p className="mt-2 text-sm" style={{ color: "var(--ink-soft)" }}>
+                Erstellen Sie eine Session aus einem Ihrer Handouts.
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {sessions.map((session) => (
-                <article
-                  key={session._id}
-                  className="card flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
-                >
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                    {statusBadge(session.status)}
-                    <div>
-                      <div className="text-lg font-semibold text-stone-900">
-                        Folie {session.currentSlide}
-                        {session.totalSlides ? ` / ${session.totalSlides}` : ""}
-                      </div>
-                      <div className="mt-1 text-sm text-stone-600">
-                        Link: /h/{session.publicToken}
-                      </div>
-                      <div className="mt-1 text-xs uppercase tracking-[0.16em] text-stone-500">
-                        {new Date(session.createdAt).toLocaleDateString("de-DE")}
-                      </div>
+            sessions.map((s) => (
+              <div key={s._id} className="card flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3">
+                  {statusBadge(s.status)}
+                  <div>
+                    <div className="font-medium">
+                      Folie {s.currentSlide}{s.totalSlides ? ` / ${s.totalSlides}` : ""}
+                    </div>
+                    <div className="mt-0.5 text-sm" style={{ color: "var(--ink-muted)" }}>
+                      /h/{s.publicToken} · {new Date(s.createdAt).toLocaleDateString("de-DE")}
                     </div>
                   </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      className="btn-primary"
-                      onClick={() => router.push(`/dashboard/session/${session._id}`)}
-                    >
-                      Öffnen
-                    </button>
-                    <a
-                      href={`/h/${session.publicToken}`}
-                      target="_blank"
-                      className="btn-secondary"
-                    >
-                      Handout
-                    </a>
-                    <button
-                      className="btn-danger"
-                      disabled={isDemo}
-                      onClick={() =>
-                        confirm("Session löschen?") &&
-                        token &&
-                        deleteSession({ token, sessionId: session._id as Id<"presentationSessions"> })
-                      }
-                    >
-                        Löschen
-                    </button>
-                  </div>
-                </article>
-              ))}
-            </div>
+                </div>
+                <div className="flex gap-2">
+                  <button className="btn-primary" onClick={() => router.push(`/dashboard/session/${s._id}`)}>
+                    Öffnen
+                  </button>
+                  <a href={`/h/${s.publicToken}`} target="_blank" className="btn-secondary">Handout</a>
+                  <button className="btn-danger" disabled={isDemo}
+                    onClick={() => confirm("Session löschen?") && token &&
+                      deleteSession({ token, sessionId: s._id as Id<"presentationSessions"> })}>
+                    Löschen
+                  </button>
+                </div>
+              </div>
+            ))
           )}
         </section>
       )}
@@ -292,29 +224,20 @@ export default function DashboardPage() {
       <Modal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} title="Neues Handout">
         <form onSubmit={handleCreateHandout} className="space-y-4">
           <div>
-            <label className="label">Titel *</label>
-            <input
-              className="input"
-              value={newHandoutTitle}
+            <label className="label">Titel</label>
+            <input className="input" value={newHandoutTitle}
               onChange={(e) => setNewHandoutTitle(e.target.value)}
-              placeholder="z. B. Einführung in KI"
-              required
-              autoFocus
-            />
+              placeholder="z. B. Einführung in Machine Learning" required autoFocus />
           </div>
           <div>
-            <label className="label">Beschreibung</label>
-            <textarea
-              className="textarea"
-              value={newHandoutDesc}
-              onChange={(e) => setNewHandoutDesc(e.target.value)}
-              rows={3}
-              placeholder="Kurze Beschreibung des Handouts..."
-            />
+            <label className="label">Beschreibung (optional)</label>
+            <textarea className="textarea" value={newHandoutDesc}
+              onChange={(e) => setNewHandoutDesc(e.target.value)} rows={3}
+              placeholder="Worum geht es in diesem Handout?" />
           </div>
           <div className="flex gap-3">
             <button type="submit" className="btn-primary flex-1" disabled={isCreating || isDemo}>
-              {isCreating ? "Erstellt..." : "Erstellen"}
+              {isCreating ? "Erstellt…" : "Erstellen"}
             </button>
             <button type="button" className="btn-secondary" onClick={() => setIsCreateOpen(false)}>
               Abbrechen
