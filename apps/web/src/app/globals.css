@@ -619,7 +619,7 @@
 @media print {
   @page {
     margin: 1.5cm;
-    size: A4;
+    size: a4;
   }
 
   body, .handout-reader {
@@ -635,20 +635,17 @@
     border: 1px solid #e0e0e0 !important;
     box-shadow: none !important;
     break-inside: avoid;
-    page-break-inside: avoid;
   }
 
   .terminal-window {
     background: #1E1E1E !important;
     break-inside: avoid;
-    page-break-inside: avoid;
   }
 
   .terminal-cursor { display: none !important; }
 
   .section-box, .callout-box {
     break-inside: avoid;
-    page-break-inside: avoid;
     background: #f5f5f5 !important;
     color: #1a1a1a !important;
   }

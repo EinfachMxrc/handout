@@ -152,7 +152,8 @@ export const deleteHandout = mutation({
 export const generateUploadUrl = mutation({
   args: { token: v.string() },
   handler: async (ctx, args) => {
-    await requirePresenter(ctx, args.token);
+    const presenter = await requirePresenter(ctx, args.token);
+    assertNotDemo(presenter);
     return await ctx.storage.generateUploadUrl();
   },
 });
@@ -285,6 +286,9 @@ export const setPdfFile = mutation({
     assertNotDemo(presenter);
     const handout = await ctx.db.get(args.handoutId);
     if (!handout || handout.presenterId !== presenter._id) throw new Error("Nicht gefunden");
+    if (handout.pdfFileId && args.pdfFileId !== handout.pdfFileId) {
+      await ctx.storage.delete(handout.pdfFileId);
+    }
     await ctx.db.patch(args.handoutId, {
       pdfFileId: args.pdfFileId,
       updatedAt: Date.now(),

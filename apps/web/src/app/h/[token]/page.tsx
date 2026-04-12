@@ -90,12 +90,14 @@ export default function PublicHandoutPage() {
   const handlePrint = () => window.print();
 
   const handleDownloadPDF = () => {
-    // Create a temporary title for the PDF filename
-    const title = sessionInfo?.handoutTitle || "handout";
-    document.title = title;
+    const previousTitle = document.title;
+    document.title = sessionInfo?.handoutTitle || "handout";
+    const restoreTitle = () => {
+      document.title = previousTitle;
+      window.removeEventListener("afterprint", restoreTitle);
+    };
+    window.addEventListener("afterprint", restoreTitle);
     window.print();
-    // Restore title after print dialog
-    setTimeout(() => { document.title = "Slide Handout"; }, 1000);
   };
 
   if (sessionInfo === undefined || visibleBlocks === undefined) {

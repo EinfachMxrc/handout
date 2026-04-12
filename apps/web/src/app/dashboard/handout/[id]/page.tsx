@@ -189,7 +189,9 @@ export default function HandoutEditPage() {
         headers: { "Content-Type": file.type },
         body: file,
       });
+      if (!result.ok) throw new Error("PDF-Upload fehlgeschlagen");
       const { storageId } = await result.json();
+      if (!storageId) throw new Error("Keine storageId vom Upload erhalten");
       await setPdfFile({ token, handoutId: handoutId as Id<"handouts">, pdfFileId: storageId });
     } finally {
       setIsUploadingPdf(false);

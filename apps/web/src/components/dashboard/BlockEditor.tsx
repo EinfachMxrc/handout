@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "convex/react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -58,6 +58,12 @@ export function BlockEditor({ handoutId, block, onSave, onCancel }: BlockEditorP
   const [imageCaption, setImageCaption] = useState(block?.imageCaption ?? "");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (imagePreview) URL.revokeObjectURL(imagePreview);
+    };
+  }, [imagePreview]);
   const [fontSize, setFontSize] = useState(block?.fontSize ?? "base");
   const [layout, setLayout] = useState(block?.layout ?? "default");
 
@@ -81,11 +87,13 @@ export function BlockEditor({ handoutId, block, onSave, onCancel }: BlockEditorP
         headers: { "Content-Type": file.type },
         body: file,
       });
+      if (!result.ok) throw new Error("Upload fehlgeschlagen: " + result.status);
       const { storageId } = await result.json();
       setImageId(storageId as Id<"_storage">);
+      if (imagePreview) URL.revokeObjectURL(imagePreview);
       setImagePreview(URL.createObjectURL(file));
-    } catch (err: any) {
-      setError(err.message ?? "Bild-Upload fehlgeschlagen");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Bild-Upload fehlgeschlagen");
     } finally {
       setIsUploading(false);
     }

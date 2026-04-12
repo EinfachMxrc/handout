@@ -62,6 +62,10 @@ export const register = mutation({
       throw new ConvexError("E-Mail-Adresse bereits registriert");
     }
 
+    if (args.email.toLowerCase() === DEMO_EMAIL.toLowerCase()) {
+      throw new Error("Diese E-Mail-Adresse ist reserviert.");
+    }
+
     const passwordHash = await sha256v2Hash(args.password);
     const presenterId = await ctx.db.insert("presenters", {
       email: args.email,
