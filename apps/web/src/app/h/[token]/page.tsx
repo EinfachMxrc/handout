@@ -67,6 +67,12 @@ export default function PublicHandoutPage() {
 
     setNewBlockIds(freshIds);
 
+    // Scroll to the first new block
+    setTimeout(() => {
+      const el = document.querySelector(`[data-block-id="${[...freshIds][0]}"]`);
+      el?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+
     // Flash terminals if the tab was hidden when the update came in
     let flashTimer: ReturnType<typeof setTimeout> | undefined;
     if (wasHiddenRef.current) {
@@ -82,6 +88,15 @@ export default function PublicHandoutPage() {
   }, [visibleBlocks]);
 
   const handlePrint = () => window.print();
+
+  const handleDownloadPDF = () => {
+    // Create a temporary title for the PDF filename
+    const title = sessionInfo?.handoutTitle || "handout";
+    document.title = title;
+    window.print();
+    // Restore title after print dialog
+    setTimeout(() => { document.title = "Slide Handout"; }, 1000);
+  };
 
   if (sessionInfo === undefined || visibleBlocks === undefined) {
     return (
@@ -125,14 +140,6 @@ export default function PublicHandoutPage() {
 
   return (
     <div className="handout-reader pb-16 pt-6">
-      <style>{`
-        @media print {
-          .no-print { display: none !important; }
-          body { background: white; }
-          .handout-block { break-inside: avoid; page-break-inside: avoid; }
-        }
-      `}</style>
-
       <div className="page-shell">
         <header className="page-hero no-print">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
@@ -150,6 +157,9 @@ export default function PublicHandoutPage() {
               </span>
               <button onClick={handlePrint} className="btn-secondary">
                 Drucken
+              </button>
+              <button onClick={handleDownloadPDF} className="btn-secondary">
+                Als PDF speichern
               </button>
             </div>
           </div>
@@ -181,15 +191,20 @@ export default function PublicHandoutPage() {
               return (
                 <article
                   key={block.id}
-                  className={`handout-block card ${isNew ? "ring-2 ring-emerald-300 dark:ring-emerald-500" : ""}`}
+                  data-block-id={block.id}
+                  className={`handout-block card overflow-hidden ${isNew ? "ring-2 ring-emerald-300 dark:ring-emerald-500" : ""}`}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="h-1 w-full rounded-t-lg bg-gradient-to-r from-[#5BB8B8] to-[#E8998D]" />
+                  <div className="flex items-center gap-3 pt-5 px-0">
                     <span
                       className="block-number flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold text-white"
                       style={{ background: "var(--accent)" }}
                     >
                       {String(idx + 1).padStart(2, "0")}
                     </span>
+                    <svg className="h-4 w-4" style={{ color: "var(--accent)" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                    </svg>
                     <span className="eyebrow">Abschnitt</span>
                   </div>
                   <h2 className="mt-3 text-3xl font-bold sm:text-4xl">{block.title}</h2>
@@ -223,8 +238,14 @@ export default function PublicHandoutPage() {
           )}
         </main>
 
-        <footer className="no-print pt-8 text-center text-xs uppercase tracking-widest" style={{ color: "var(--ink-muted)" }}>
+        <footer className="no-print flex items-center justify-center gap-2 pt-8 text-center text-xs uppercase tracking-widest" style={{ color: "var(--ink-muted)" }}>
           Slide Handout · {footerText}
+          {sessionInfo.status === "live" && (
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            </span>
+          )}
         </footer>
       </div>
     </div>
