@@ -17,15 +17,15 @@
     "zustand": "^5.0.3"
   },
   "devDependencies": {
-    "@types/office-js": "^1.0.477",
+    "@types/office-js": "^1.0.588",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
-    "@vitejs/plugin-react": "^4.4.1",
+    "@vitejs/plugin-react": "^6.0.1",
     "autoprefixer": "^10.4.21",
-    "postcss": "^8.5.3",
-    "tailwindcss": "^3.4.17",
-    "typescript": "^5.7.3",
-    "vite": "^6.3.1",
-    "vite-plugin-mkcert": "^1.17.8"
+    "postcss": "^8.5.9",
+    "tailwindcss": "^4.2.2",
+    "typescript": "^6.0.2",
+    "vite": "^8.0.8",
+    "vite-plugin-mkcert": "^2.0.0"
   }
 }
