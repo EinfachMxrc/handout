@@ -41,15 +41,6 @@ export default function PublicHandoutPage() {
   const prevBlockIdsRef = useRef<Set<string>>(new Set());
   const [newBlockIds, setNewBlockIds] = useState<Set<string>>(new Set());
   const [flashBlockIds, setFlashBlockIds] = useState<Set<string>>(new Set());
-  const wasHiddenRef = useRef(false);
-
-  // Track whether the tab was in the background; seed with actual initial state
-  useEffect(() => {
-    wasHiddenRef.current = document.hidden; // capture initial visibility state
-    const onVisibility = () => { wasHiddenRef.current = document.hidden; };
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => document.removeEventListener("visibilitychange", onVisibility);
-  }, []);
 
   useEffect(() => {
     if (!visibleBlocks) return;
@@ -75,7 +66,7 @@ export default function PublicHandoutPage() {
 
     // Flash terminals if the tab was hidden when the update came in
     let flashTimer: ReturnType<typeof setTimeout> | undefined;
-    if (wasHiddenRef.current) {
+    if (typeof document !== "undefined" && document.hidden) {
       setFlashBlockIds(freshIds);
       flashTimer = setTimeout(() => setFlashBlockIds(new Set()), 3500);
     }

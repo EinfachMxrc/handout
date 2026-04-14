@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 
 type Mode = "light" | "dark" | "system";
 
@@ -25,24 +25,27 @@ function getStoredMode(): Mode {
 export function ThemeToggle() {
   const [mode, setMode] = useState<Mode>("system");
   const [mounted, setMounted] = useState(false);
+  const modeRef = useRef<Mode>("system");
 
   useEffect(() => {
     const initial = getStoredMode();
+    modeRef.current = initial;
     setMode(initial);
     applyMode(initial);
     setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!mounted || mode !== "system") return;
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const listener = () => applyMode("system");
+    const listener = () => {
+      if (modeRef.current === "system") {
+        applyMode("system");
+      }
+    };
     mq.addEventListener("change", listener);
     return () => mq.removeEventListener("change", listener);
-  }, [mode, mounted]);
+  }, []);
 
   const cycle = useCallback(() => {
     const next: Mode = mode === "light" ? "dark" : mode === "dark" ? "system" : "light";
+    modeRef.current = next;
     setMode(next);
     localStorage.setItem("theme", next);
     applyMode(next);
