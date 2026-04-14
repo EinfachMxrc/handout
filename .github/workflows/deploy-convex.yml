@@ -1,0 +1,35 @@
+name: Deploy Convex
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "convex/**"
+      - ".github/workflows/deploy-convex.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: convex-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Convex
+        working-directory: convex
+        run: npm install convex@latest --no-save
+
+      - name: Deploy to Convex
+        working-directory: convex
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+        run: npx convex deploy
