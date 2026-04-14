@@ -39,9 +39,9 @@ export default function RootLayout({
               (function() {
                 try {
                   var mode = localStorage.getItem('theme');
-                  if (mode === 'dark' || (!mode && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                    document.documentElement.classList.add('dark');
-                  }
+                  var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                  var wantsDark = mode === 'dark' || ((mode === 'system' || !mode) && prefersDark);
+                  if (wantsDark) document.documentElement.classList.add('dark');
                 } catch(e) {}
               })();
             `,
