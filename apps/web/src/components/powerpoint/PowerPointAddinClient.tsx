@@ -51,12 +51,13 @@ function emptyPersistedState(): PersistedState {
 }
 
 function loadPersistedState(): PersistedState {
-  if (typeof window === "undefined") {
+  const storage = globalThis.localStorage;
+  if (!storage) {
     return emptyPersistedState();
   }
 
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = storage.getItem(STORAGE_KEY);
     if (!raw) {
       return emptyPersistedState();
     }
@@ -71,6 +72,16 @@ function loadPersistedState(): PersistedState {
   } catch {
     return emptyPersistedState();
   }
+}
+
+function persistState(state: PersistedState): void {
+  const storage = globalThis.localStorage;
+  if (!storage) return;
+  storage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function getClientOrigin(): string {
+  return globalThis.location?.origin ?? "";
 }
 
 function getErrorMessage(error: unknown): string {
@@ -91,34 +102,13 @@ function getErrorMessage(error: unknown): string {
   return "Es ist ein unbekannter Fehler aufgetreten.";
 }
 
-export function PowerPointAddinClient() {
+function useAddinAuthSessionSync() {
   const [hydrated, setHydrated] = useState(false);
   const [token, setToken] = useState("");
   const [presenterEmail, setPresenterEmail] = useState("");
   const [presenterName, setPresenterName] = useState("");
   const [selectedSessionId, setSelectedSessionId] = useState("");
-  const [loginEmail, setLoginEmail] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
-  const [loginPending, setLoginPending] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
-  const [syncStatus, setSyncStatus] = useState<SyncCapability>("manual_only");
-  const [bridgeState, setBridgeState] = useState<{
-    sessionId: string;
-    slide: number | null;
-  }>({
-    sessionId: "",
-    slide: null,
-  });
-  const [slideInput, setSlideInput] = useState("");
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [officeDetected, setOfficeDetected] = useState(false);
-
-  const login = useMutation(api.auth.login);
-  const logout = useMutation(api.auth.logout);
-  const startSession = useMutation(api.sessions.startSession);
-  const stopSession = useMutation(api.sessions.stopSession);
-  const setCurrentSlide = useMutation(api.sessions.setCurrentSlide);
 
   useEffect(() => {
     const persisted = loadPersistedState();
@@ -135,6 +125,7 @@ export function PowerPointAddinClient() {
     api.sessions.listSessions,
     token && hasValidatedPresenter ? { token } : "skip"
   ) as SessionOption[] | undefined;
+
   const effectiveSelectedSessionId = useMemo(() => {
     if (!sessions || sessions.length === 0) {
       return "";
@@ -151,6 +142,7 @@ export function PowerPointAddinClient() {
 
     return preferredSession?._id ?? "";
   }, [sessions, selectedSessionId]);
+
   const activeSessionId = effectiveSelectedSessionId as Id<"presentationSessions"> | "";
   const sessionData = useQuery(
     api.sessions.getPresenterSessionState,
@@ -167,51 +159,167 @@ export function PowerPointAddinClient() {
   const accountName = presenter?.name ?? presenterName;
 
   useEffect(() => {
-    if (!hydrated || typeof window === "undefined") {
+    if (!hydrated) {
       return;
     }
 
-    window.localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        token,
-        presenterEmail: accountEmail,
-        presenterName: accountName,
-        selectedSessionId: effectiveSelectedSessionId,
-      } satisfies PersistedState)
-    );
+    persistState({
+      token,
+      presenterEmail: accountEmail,
+      presenterName: accountName,
+      selectedSessionId: effectiveSelectedSessionId,
+    });
   }, [hydrated, token, accountEmail, accountName, effectiveSelectedSessionId]);
 
   useEffect(() => {
-    if (!token || presenter === undefined) {
+    if (!token || presenter === undefined || presenter !== null) {
       return;
     }
 
-    if (presenter === null) {
-      setToken("");
-      setPresenterEmail("");
-      setPresenterName("");
-      setSelectedSessionId("");
-      setLoginError("Die gespeicherte Sitzung ist abgelaufen. Bitte erneut anmelden.");
-    }
+    setToken("");
+    setPresenterEmail("");
+    setPresenterName("");
+    setSelectedSessionId("");
+    setLoginError("Die gespeicherte Sitzung ist abgelaufen. Bitte erneut anmelden.");
   }, [presenter, token]);
 
-  // Bridge slide takes priority over DB value to avoid overwriting a detected
-  // slide change before the Convex mutation completes.
-  const bridgeSlideForSession =
-    bridgeState.sessionId === effectiveSelectedSessionId ? bridgeState.slide : null;
-  const lastKnownSlide = bridgeSlideForSession ?? sessionData?.session.currentSlide ?? 1;
+  const resetAuthSession = useCallback(() => {
+    setToken("");
+    setPresenterEmail("");
+    setPresenterName("");
+    setSelectedSessionId("");
+    setLoginError(null);
+  }, []);
 
-  const sessionOptions = useMemo(
-    () =>
-      (sessions ?? []).map((session) => ({
-        ...session,
-        label: `Session - ${statusLabel[session.status]} - ${new Date(
-          session.createdAt
-        ).toLocaleDateString("de-DE")}`,
-      })),
-    [sessions]
+  return {
+    hydrated,
+    token,
+    setToken,
+    selectedSessionId,
+    setSelectedSessionId,
+    sessions,
+    sessionData,
+    activeSessionId,
+    effectiveSelectedSessionId,
+    isDemo,
+    accountEmail,
+    accountName,
+    loginError,
+    setLoginError,
+    setPresenterEmail,
+    setPresenterName,
+    resetAuthSession,
+  };
+}
+
+function useOfficeBridgeLifecycle({
+  token,
+  activeSessionId,
+  isDemo,
+  syncSlide,
+  onError,
+}: {
+  token: string;
+  activeSessionId: Id<"presentationSessions"> | "";
+  isDemo: boolean;
+  syncSlide: (slideNumber: number, totalSlides?: number, presentationTitle?: string) => Promise<void>;
+  onError?: (message: string) => void;
+}) {
+  const [syncStatus, setSyncStatus] = useState<SyncCapability>("manual_only");
+  const [officeDetected, setOfficeDetected] = useState(false);
+  const [bridgeState, setBridgeState] = useState<{
+    sessionId: string;
+    slide: number | null;
+  }>({
+    sessionId: "",
+    slide: null,
+  });
+
+  useEffect(() => {
+    setSyncStatus("manual_only");
+
+    const officeScriptPresent = typeof (globalThis as any).Office !== "undefined";
+    if (!officeScriptPresent || !token || !activeSessionId || isDemo) {
+      setOfficeDetected(false);
+      return;
+    }
+
+    let active = true;
+    void initOfficeBridge({
+      onSlideChange: (info) => {
+        if (!active) return;
+        setBridgeState({ sessionId: activeSessionId, slide: info.slideNumber });
+        void syncSlide(info.slideNumber, info.totalSlides, info.presentationTitle);
+      },
+      onModeChange: (mode) => {
+        if (!active) return;
+        setSyncStatus(mode);
+      },
+      onError: (message) => {
+        if (!active) return;
+        onError?.(message);
+        setSyncStatus("hybrid");
+      },
+    }).then((mode) => {
+      if (!active) return;
+      setSyncStatus(mode);
+      setOfficeDetected(mode !== "manual_only");
+    });
+
+    return () => {
+      active = false;
+      destroyOfficeBridge();
+    };
+  }, [token, activeSessionId, isDemo, syncSlide, onError]);
+
+  const setBridgeSlideForSession = useCallback((sessionId: string, slide: number | null) => {
+    setBridgeState({ sessionId, slide });
+  }, []);
+
+  const bridgeSlideForSession = useCallback(
+    (sessionId: string) => (bridgeState.sessionId === sessionId ? bridgeState.slide : null),
+    [bridgeState]
   );
+
+  return {
+    syncStatus,
+    officeDetected,
+    setBridgeSlideForSession,
+    bridgeSlideForSession,
+  };
+}
+
+export function PowerPointAddinClient() {
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginPending, setLoginPending] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [slideInput, setSlideInput] = useState("");
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const login = useMutation(api.auth.login);
+  const logout = useMutation(api.auth.logout);
+  const startSession = useMutation(api.sessions.startSession);
+  const stopSession = useMutation(api.sessions.stopSession);
+  const setCurrentSlide = useMutation(api.sessions.setCurrentSlide);
+  const {
+    hydrated,
+    token,
+    setToken,
+    setSelectedSessionId,
+    sessions,
+    sessionData,
+    activeSessionId,
+    effectiveSelectedSessionId,
+    isDemo,
+    accountEmail,
+    accountName,
+    loginError,
+    setLoginError,
+    setPresenterEmail,
+    setPresenterName,
+    resetAuthSession,
+  } = useAddinAuthSessionSync();
 
   const syncSlide = useCallback(
     async (slideNumber: number, totalSlides?: number, presentationTitle?: string) => {
@@ -238,56 +346,38 @@ export function PowerPointAddinClient() {
     },
     [token, activeSessionId, isDemo, setCurrentSlide]
   );
+  const {
+    syncStatus,
+    officeDetected,
+    setBridgeSlideForSession,
+    bridgeSlideForSession,
+  } = useOfficeBridgeLifecycle({
+    token,
+    activeSessionId,
+    isDemo,
+    syncSlide,
+    onError: (message) => setActionError(message),
+  });
 
-  useEffect(() => {
-    setSyncStatus("manual_only");
+  const lastKnownSlide =
+    bridgeSlideForSession(effectiveSelectedSessionId) ??
+    sessionData?.session.currentSlide ??
+    1;
 
-    // Only check whether the Office script was loaded at all (typeof Office).
-    // Office.context may not be set up yet at this point — initOfficeBridge
-    // uses Office.onReady() internally which waits for full initialization.
-    const officeScriptPresent = typeof (globalThis as any).Office !== "undefined";
-
-    if (!officeScriptPresent || !token || !activeSessionId || isDemo) {
-      setOfficeDetected(false);
-      return;
-    }
-
-    let active = true;
-
-    void initOfficeBridge({
-      onSlideChange: (info) => {
-        if (!active) return;
-        setBridgeState({ sessionId: activeSessionId, slide: info.slideNumber });
-        void syncSlide(info.slideNumber, info.totalSlides, info.presentationTitle);
-      },
-      onModeChange: (mode) => {
-        if (!active) return;
-        setSyncStatus(mode);
-      },
-      onError: (message) => {
-        if (!active) return;
-        setActionError(message);
-        setSyncStatus("hybrid");
-      },
-    }).then((mode) => {
-      if (!active) return;
-      setSyncStatus(mode);
-      // officeDetected = true only if Office.onReady confirmed we are in PowerPoint
-      setOfficeDetected(mode !== "manual_only");
-    });
-
-    return () => {
-      active = false;
-      destroyOfficeBridge();
-    };
-  }, [token, activeSessionId, isDemo, syncSlide]);
+  const sessionOptions = useMemo(
+    () =>
+      (sessions ?? []).map((session) => ({
+        ...session,
+        label: `Session - ${statusLabel[session.status]} - ${new Date(
+          session.createdAt
+        ).toLocaleDateString("de-DE")}`,
+      })),
+    [sessions]
+  );
 
   const handleManualSlide = async (nextSlide: number) => {
     const normalizedSlide = Math.max(1, nextSlide);
-    setBridgeState({
-      sessionId: effectiveSelectedSessionId,
-      slide: normalizedSlide,
-    });
+    setBridgeSlideForSession(effectiveSelectedSessionId, normalizedSlide);
     await syncSlide(
       normalizedSlide,
       sessionData?.session.totalSlides,
@@ -320,11 +410,7 @@ export function PowerPointAddinClient() {
 
   const handleLogout = async () => {
     const currentToken = token;
-    setToken("");
-    setPresenterEmail("");
-    setPresenterName("");
-    setSelectedSessionId("");
-    setLoginError(null);
+    resetAuthSession();
     setActionError(null);
 
     if (!currentToken) {
@@ -373,9 +459,7 @@ export function PowerPointAddinClient() {
   };
 
   const publicUrl = sessionData
-    ? `${
-        typeof window !== "undefined" ? window.location.origin : ""
-      }${sessionData.publicUrl}`
+    ? `${getClientOrigin()}${sessionData.publicUrl}`
     : "";
 
   return (

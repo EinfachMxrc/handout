@@ -55,8 +55,7 @@ export default function SessionPage() {
   const { session, handout, blocks } = data;
   const sessionId = session._id;
   const publicUrl = `/h/${session.publicToken}`;
-  const fullPublicUrl =
-    typeof window !== "undefined" ? `${window.location.origin}${publicUrl}` : publicUrl;
+  const fullPublicUrl = `${globalThis.location?.origin ?? ""}${publicUrl}`;
 
   const statusColor: Record<string, "green" | "yellow" | "gray"> = {
     live: "green",

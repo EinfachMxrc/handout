@@ -8,7 +8,7 @@ import { api } from "@convex/_generated/api";
 import { useAuthStore } from "@/store/authStore";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { token, clearAuth, presenterName, presenterEmail, isDemo, setAuth, hasHydrated } = useAuthStore();
+  const { token, clearAuth, presenterName, presenterEmail, isDemo, hasHydrated } = useAuthStore();
   const router = useRouter();
 
   const presenterInfo = useQuery(api.auth.validateToken, token ? { token } : "skip");
@@ -17,23 +17,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     if (!hasHydrated) return;
     if (!token) {
-      router.push("/auth/login");
+      router.replace("/auth/login");
       return;
     }
     if (presenterInfo === null) {
       clearAuth();
-      router.push("/auth/login");
+      router.replace("/auth/login");
     }
-    if (
-      token &&
-      presenterInfo &&
-      (presenterInfo.name !== presenterName ||
-        presenterInfo.email !== presenterEmail ||
-        presenterInfo.isDemo !== isDemo)
-    ) {
-      setAuth(token, presenterInfo.name ?? undefined, presenterInfo.email, presenterInfo.isDemo);
-    }
-  }, [hasHydrated, token, presenterInfo, presenterName, presenterEmail, isDemo, router, clearAuth, setAuth]);
+  }, [hasHydrated, token, presenterInfo, clearAuth, router]);
+
+  const displayPresenter =
+    presenterInfo?.name ?? presenterName ?? presenterInfo?.email ?? presenterEmail ?? "Presenter";
+  const isDemoAccount = presenterInfo?.isDemo ?? isDemo;
 
   const handleLogout = async () => {
     if (token) {
@@ -78,7 +73,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               Landing
             </Link>
             <div className="rounded-full border border-stone-800/10 bg-white/70 px-4 py-2 text-sm text-stone-700">
-              {presenterName ?? presenterEmail ?? "Presenter"}
+              {displayPresenter}
             </div>
             <button onClick={handleLogout} className="btn-secondary">
               Abmelden
@@ -86,7 +81,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </div>
 
-        {isDemo && (
+        {isDemoAccount && (
           <div className="soft-note mb-6">
             Demo-Modus: Dieser Account ist absichtlich schreibgeschützt. Sie
             können Demo-Daten ansehen, aber keine Handouts, Sessions oder
