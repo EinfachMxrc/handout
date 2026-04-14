@@ -1,0 +1,15 @@
+{
+  "_comment": "Diese Flags als Overlay auf das bestehende apps/web/tsconfig.json mergen. noUncheckedIndexedAccess bewusst separat — aktiviert viele neue Fehler, sollte als eigenes Projekt gefixt werden.",
+  "compilerOptions": {
+    "noImplicitOverride": true,
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false
+  },
+  "_optionalFutureFlags": {
+    "noUncheckedIndexedAccess": "Jeder array[i] wird T | undefined. Fängt echte Bugs, aber viele Callsites müssen angepasst werden.",
+    "exactOptionalPropertyTypes": "Unterscheidet { x?: T } von { x?: T | undefined }. Präziser, aber breaking."
+  }
+}
