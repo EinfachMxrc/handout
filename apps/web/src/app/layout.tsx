@@ -27,6 +27,12 @@ export default function RootLayout({
   return (
     <html lang="de" suppressHydrationWarning>
       <head>
+        {process.env.NODE_ENV !== "production" && (
+          <script
+            crossOrigin="anonymous"
+            src="//unpkg.com/react-scan/dist/auto.global.js"
+          />
+        )}
         <script
           dangerouslySetInnerHTML={{
             __html: `
