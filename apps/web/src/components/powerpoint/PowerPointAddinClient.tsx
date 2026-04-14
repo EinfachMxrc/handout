@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import type { Id } from "@convex/_generated/dataModel";
 import { api } from "@convex/_generated/api";
@@ -103,7 +103,13 @@ export function PowerPointAddinClient() {
   const [loginError, setLoginError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<SyncCapability>("manual_only");
-  const [bridgeSlide, setBridgeSlide] = useState<number | null>(null);
+  const [bridgeState, setBridgeState] = useState<{
+    sessionId: string;
+    slide: number | null;
+  }>({
+    sessionId: "",
+    slide: null,
+  });
   const [slideInput, setSlideInput] = useState("");
   const [isSyncing, setIsSyncing] = useState(false);
   const [officeDetected, setOfficeDetected] = useState(false);
@@ -123,6 +129,43 @@ export function PowerPointAddinClient() {
     setHydrated(true);
   }, []);
 
+  const presenter = useQuery(api.auth.validateToken, token ? { token } : "skip");
+  const hasValidatedPresenter = presenter !== undefined && presenter !== null;
+  const sessions = useQuery(
+    api.sessions.listSessions,
+    token && hasValidatedPresenter ? { token } : "skip"
+  ) as SessionOption[] | undefined;
+  const effectiveSelectedSessionId = useMemo(() => {
+    if (!sessions || sessions.length === 0) {
+      return "";
+    }
+
+    if (selectedSessionId && sessions.some((session) => session._id === selectedSessionId)) {
+      return selectedSessionId;
+    }
+
+    const preferredSession =
+      sessions.find((session) => session.status === "live") ??
+      sessions.find((session) => session.status === "draft") ??
+      sessions[0];
+
+    return preferredSession?._id ?? "";
+  }, [sessions, selectedSessionId]);
+  const activeSessionId = effectiveSelectedSessionId as Id<"presentationSessions"> | "";
+  const sessionData = useQuery(
+    api.sessions.getPresenterSessionState,
+    token && hasValidatedPresenter && activeSessionId
+      ? {
+          token,
+          sessionId: activeSessionId,
+        }
+      : "skip"
+  );
+
+  const isDemo = presenter?.isDemo ?? false;
+  const accountEmail = presenter?.email ?? presenterEmail;
+  const accountName = presenter?.name ?? presenterName;
+
   useEffect(() => {
     if (!hydrated || typeof window === "undefined") {
       return;
@@ -132,30 +175,12 @@ export function PowerPointAddinClient() {
       STORAGE_KEY,
       JSON.stringify({
         token,
-        presenterEmail,
-        presenterName,
-        selectedSessionId,
+        presenterEmail: accountEmail,
+        presenterName: accountName,
+        selectedSessionId: effectiveSelectedSessionId,
       } satisfies PersistedState)
     );
-  }, [hydrated, token, presenterEmail, presenterName, selectedSessionId]);
-
-  const presenter = useQuery(api.auth.validateToken, token ? { token } : "skip");
-  const hasValidatedPresenter = presenter !== undefined && presenter !== null;
-  const sessions = useQuery(
-    api.sessions.listSessions,
-    token && hasValidatedPresenter ? { token } : "skip"
-  ) as SessionOption[] | undefined;
-  const sessionData = useQuery(
-    api.sessions.getPresenterSessionState,
-    token && hasValidatedPresenter && selectedSessionId
-      ? {
-          token,
-          sessionId: selectedSessionId as Id<"presentationSessions">,
-        }
-      : "skip"
-  );
-
-  const isDemo = presenter?.isDemo ?? false;
+  }, [hydrated, token, accountEmail, accountName, effectiveSelectedSessionId]);
 
   useEffect(() => {
     if (!token || presenter === undefined) {
@@ -168,42 +193,14 @@ export function PowerPointAddinClient() {
       setPresenterName("");
       setSelectedSessionId("");
       setLoginError("Die gespeicherte Sitzung ist abgelaufen. Bitte erneut anmelden.");
-      return;
     }
-
-    setPresenterEmail(presenter.email);
-    setPresenterName(presenter.name ?? "");
   }, [presenter, token]);
-
-  useEffect(() => {
-    if (!sessions) {
-      return;
-    }
-
-    const selectedStillExists = sessions.some(
-      (session) => session._id === selectedSessionId
-    );
-    if (selectedStillExists) {
-      return;
-    }
-
-    const preferredSession =
-      sessions.find((session) => session.status === "live") ??
-      sessions.find((session) => session.status === "draft") ??
-      sessions[0];
-
-    setSelectedSessionId(preferredSession?._id ?? "");
-  }, [sessions, selectedSessionId]);
-
-  // Reset bridge slide when switching sessions so the DB value shows until
-  // the bridge detects the current slide again.
-  useEffect(() => {
-    setBridgeSlide(null);
-  }, [selectedSessionId]);
 
   // Bridge slide takes priority over DB value to avoid overwriting a detected
   // slide change before the Convex mutation completes.
-  const lastKnownSlide = bridgeSlide ?? sessionData?.session.currentSlide ?? 1;
+  const bridgeSlideForSession =
+    bridgeState.sessionId === effectiveSelectedSessionId ? bridgeState.slide : null;
+  const lastKnownSlide = bridgeSlideForSession ?? sessionData?.session.currentSlide ?? 1;
 
   const sessionOptions = useMemo(
     () =>
@@ -216,32 +213,31 @@ export function PowerPointAddinClient() {
     [sessions]
   );
 
-  const syncSlide = async (
-    slideNumber: number,
-    totalSlides?: number,
-    presentationTitle?: string
-  ) => {
-    if (!token || !selectedSessionId || isDemo) {
-      return;
-    }
+  const syncSlide = useCallback(
+    async (slideNumber: number, totalSlides?: number, presentationTitle?: string) => {
+      if (!token || !activeSessionId || isDemo) {
+        return;
+      }
 
-    setIsSyncing(true);
-    setActionError(null);
+      setIsSyncing(true);
+      setActionError(null);
 
-    try {
-      await setCurrentSlide({
-        token,
-        sessionId: selectedSessionId as Id<"presentationSessions">,
-        slideNumber,
-        totalSlides,
-        presentationTitle,
-      });
-    } catch (error) {
-      setActionError(getErrorMessage(error));
-    } finally {
-      setIsSyncing(false);
-    }
-  };
+      try {
+        await setCurrentSlide({
+          token,
+          sessionId: activeSessionId,
+          slideNumber,
+          totalSlides,
+          presentationTitle,
+        });
+      } catch (error) {
+        setActionError(getErrorMessage(error));
+      } finally {
+        setIsSyncing(false);
+      }
+    },
+    [token, activeSessionId, isDemo, setCurrentSlide]
+  );
 
   useEffect(() => {
     setSyncStatus("manual_only");
@@ -251,7 +247,7 @@ export function PowerPointAddinClient() {
     // uses Office.onReady() internally which waits for full initialization.
     const officeScriptPresent = typeof (globalThis as any).Office !== "undefined";
 
-    if (!officeScriptPresent || !token || !selectedSessionId || isDemo) {
+    if (!officeScriptPresent || !token || !activeSessionId || isDemo) {
       setOfficeDetected(false);
       return;
     }
@@ -261,7 +257,7 @@ export function PowerPointAddinClient() {
     void initOfficeBridge({
       onSlideChange: (info) => {
         if (!active) return;
-        setBridgeSlide(info.slideNumber);
+        setBridgeState({ sessionId: activeSessionId, slide: info.slideNumber });
         void syncSlide(info.slideNumber, info.totalSlides, info.presentationTitle);
       },
       onModeChange: (mode) => {
@@ -284,11 +280,14 @@ export function PowerPointAddinClient() {
       active = false;
       destroyOfficeBridge();
     };
-  }, [token, selectedSessionId, isDemo, setCurrentSlide]);
+  }, [token, activeSessionId, isDemo, syncSlide]);
 
   const handleManualSlide = async (nextSlide: number) => {
     const normalizedSlide = Math.max(1, nextSlide);
-    setBridgeSlide(normalizedSlide);
+    setBridgeState({
+      sessionId: effectiveSelectedSessionId,
+      slide: normalizedSlide,
+    });
     await syncSlide(
       normalizedSlide,
       sessionData?.session.totalSlides,
@@ -340,7 +339,7 @@ export function PowerPointAddinClient() {
   };
 
   const handleStartSession = async () => {
-    if (!token || !selectedSessionId || isDemo) {
+    if (!token || !activeSessionId || isDemo) {
       return;
     }
 
@@ -349,7 +348,7 @@ export function PowerPointAddinClient() {
     try {
       await startSession({
         token,
-        sessionId: selectedSessionId as Id<"presentationSessions">,
+        sessionId: activeSessionId,
       });
     } catch (error) {
       setActionError(getErrorMessage(error));
@@ -357,7 +356,7 @@ export function PowerPointAddinClient() {
   };
 
   const handleStopSession = async () => {
-    if (!token || !selectedSessionId || isDemo) {
+    if (!token || !activeSessionId || isDemo) {
       return;
     }
 
@@ -366,7 +365,7 @@ export function PowerPointAddinClient() {
     try {
       await stopSession({
         token,
-        sessionId: selectedSessionId as Id<"presentationSessions">,
+        sessionId: activeSessionId,
       });
     } catch (error) {
       setActionError(getErrorMessage(error));
@@ -459,7 +458,7 @@ export function PowerPointAddinClient() {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="eyebrow">Verbunden</div>
-                  <h2 className="mt-3 text-3xl">{presenterName || presenterEmail}</h2>
+                  <h2 className="mt-3 text-3xl">{accountName || accountEmail}</h2>
                 </div>
                 <button className="btn-secondary" onClick={handleLogout}>
                   Abmelden
@@ -476,7 +475,7 @@ export function PowerPointAddinClient() {
                 <label className="label">Session</label>
                 <select
                   className="input"
-                  value={selectedSessionId}
+                  value={effectiveSelectedSessionId}
                   onChange={(event) => setSelectedSessionId(event.target.value)}
                 >
                   <option value="">
@@ -495,7 +494,7 @@ export function PowerPointAddinClient() {
               </div>
             </div>
 
-            {selectedSessionId && sessionData && (
+            {activeSessionId && sessionData && (
               <>
                 <div className="card">
                   <div className="flex items-start justify-between gap-3">
@@ -604,11 +603,11 @@ export function PowerPointAddinClient() {
               </>
             )}
 
-            {selectedSessionId && !sessionData && (
+            {activeSessionId && !sessionData && (
               <div className="section-panel text-sm text-stone-500">Session wird geladen...</div>
             )}
 
-            {!selectedSessionId && sessions !== undefined && sessions.length === 0 && (
+            {!activeSessionId && sessions !== undefined && sessions.length === 0 && (
               <div className="section-panel border-dashed text-sm text-stone-600">
                 Noch keine Session vorhanden. Erstellen Sie im{" "}
                 <Link href="/dashboard" className="font-semibold underline decoration-stone-300">

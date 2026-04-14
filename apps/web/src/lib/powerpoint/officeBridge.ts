@@ -2,13 +2,13 @@ declare const Office: any;
 
 export type SyncCapability = "auto" | "hybrid" | "manual_only";
 
-export interface OfficeSlideInfo {
+interface OfficeSlideInfo {
   slideNumber: number;
   totalSlides: number;
   presentationTitle: string;
 }
 
-export interface OfficeBridgeCallbacks {
+interface OfficeBridgeCallbacks {
   onSlideChange: (info: OfficeSlideInfo) => void;
   onModeChange: (mode: SyncCapability) => void;
   onError: (message: string) => void;
@@ -26,7 +26,7 @@ let windowFocusListener: (() => void) | null = null;
 const POLL_EDIT_MS = 500;
 const POLL_READ_MS = 1000;
 
-export function isOfficeAvailable(): boolean {
+function isOfficeAvailable(): boolean {
   return typeof Office !== "undefined" && typeof Office.context !== "undefined";
 }
 
@@ -178,7 +178,7 @@ function teardownWindowListeners() {
  *
  * Total slides: PowerPoint.run().slides.items.length (reliable everywhere).
  */
-export function getCurrentSlideInfo(): Promise<OfficeSlideInfo | null> {
+function getCurrentSlideInfo(): Promise<OfficeSlideInfo | null> {
   return new Promise((resolve) => {
     if (!isInitialized || !isOfficeAvailable()) {
       resolve(null);
