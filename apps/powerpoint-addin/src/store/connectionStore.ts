@@ -1,21 +1,15 @@
-/**
- * Add-in UI store – local state only.
- * Convex is the source of truth for session data.
- */
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import type { AddinMode, SyncStatus } from "./types";
 
-export type AddinMode = "disconnected" | "connecting" | "connected";
-export type SyncStatus = "auto" | "hybrid" | "manual_only";
-
-interface AddinState {
-  // Persisted
+interface AddinConnectionState {
+  // Persisted configuration
   sessionPublicToken: string;
   presenterToken: string;
   sessionId: string;
   convexUrl: string;
 
-  // Runtime (not persisted)
+  // Runtime connection status
   mode: AddinMode;
   syncStatus: SyncStatus;
   isOfficeAvailable: boolean;
@@ -23,14 +17,6 @@ interface AddinState {
   connectionError: string | null;
   isSyncing: boolean;
 
-  // Simulator state (only active when not in Office)
-  simulatorTotalSlides: number;
-  simulatorAutoAdvanceMs: number;
-
-  // Settings open
-  isSettingsOpen: boolean;
-
-  // Actions
   setConnectionInfo: (info: {
     sessionPublicToken?: string;
     presenterToken?: string;
@@ -43,12 +29,19 @@ interface AddinState {
   setLastKnownSlide: (slide: number) => void;
   setConnectionError: (error: string | null) => void;
   setIsSyncing: (syncing: boolean) => void;
-  setSimulatorConfig: (total: number, autoMs: number) => void;
-  setIsSettingsOpen: (open: boolean) => void;
-  reset: () => void;
+  resetRuntime: () => void;
 }
 
-export const useAddinStore = create<AddinState>()(
+const initialRuntimeState = {
+  mode: "disconnected" as AddinMode,
+  syncStatus: "manual_only" as SyncStatus,
+  isOfficeAvailable: false,
+  lastKnownSlide: 1,
+  connectionError: null,
+  isSyncing: false,
+};
+
+export const useAddinConnectionStore = create<AddinConnectionState>()(
   persist(
     (set) => ({
       sessionPublicToken: "",
@@ -56,34 +49,16 @@ export const useAddinStore = create<AddinState>()(
       sessionId: "",
       convexUrl: "",
 
-      mode: "disconnected",
-      syncStatus: "manual_only",
-      isOfficeAvailable: false,
-      lastKnownSlide: 1,
-      connectionError: null,
-      isSyncing: false,
-      simulatorTotalSlides: 10,
-      simulatorAutoAdvanceMs: 0,
-      isSettingsOpen: false,
+      ...initialRuntimeState,
 
-      setConnectionInfo: (info) => set((s) => ({ ...s, ...info })),
+      setConnectionInfo: (info) => set((state) => ({ ...state, ...info })),
       setMode: (mode) => set({ mode }),
       setSyncStatus: (syncStatus) => set({ syncStatus }),
       setOfficeAvailable: (isOfficeAvailable) => set({ isOfficeAvailable }),
       setLastKnownSlide: (lastKnownSlide) => set({ lastKnownSlide }),
       setConnectionError: (connectionError) => set({ connectionError }),
       setIsSyncing: (isSyncing) => set({ isSyncing }),
-      setSimulatorConfig: (simulatorTotalSlides, simulatorAutoAdvanceMs) =>
-        set({ simulatorTotalSlides, simulatorAutoAdvanceMs }),
-      setIsSettingsOpen: (isSettingsOpen) => set({ isSettingsOpen }),
-      reset: () =>
-        set({
-          mode: "disconnected",
-          syncStatus: "manual_only",
-          lastKnownSlide: 1,
-          connectionError: null,
-          isSyncing: false,
-        }),
+      resetRuntime: () => set(initialRuntimeState),
     }),
     {
       name: "slide-handout-addin",
@@ -92,8 +67,6 @@ export const useAddinStore = create<AddinState>()(
         presenterToken: state.presenterToken,
         sessionId: state.sessionId,
         convexUrl: state.convexUrl,
-        simulatorTotalSlides: state.simulatorTotalSlides,
-        simulatorAutoAdvanceMs: state.simulatorAutoAdvanceMs,
       }),
     }
   )

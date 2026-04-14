@@ -1,4 +1,4 @@
-import type { SyncStatus } from "../store/addinStore";
+import type { SyncStatus } from "../store/types";
 
 interface ConnectionStatusProps {
   isConnected: boolean;

@@ -10,3 +10,5 @@ dist/
 Thumbs.db
 *.log
 .pnpm-store/
+.turbo/
+*.tsbuildinfo

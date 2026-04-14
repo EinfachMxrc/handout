@@ -10,10 +10,10 @@ interface AuthState {
   presenterName: string | null;
   presenterEmail: string | null;
   isDemo: boolean;
-  isLoading: boolean;
+  hasHydrated: boolean;
   setAuth: (token: string, name?: string, email?: string, isDemo?: boolean) => void;
   clearAuth: () => void;
-  setLoading: (loading: boolean) => void;
+  setHasHydrated: (hydrated: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -23,7 +23,7 @@ export const useAuthStore = create<AuthState>()(
       presenterName: null,
       presenterEmail: null,
       isDemo: false,
-      isLoading: false,
+      hasHydrated: false,
       setAuth: (token, name, email, isDemo = false) =>
         set({
           token,
@@ -38,7 +38,7 @@ export const useAuthStore = create<AuthState>()(
           presenterEmail: null,
           isDemo: false,
         }),
-      setLoading: (isLoading) => set({ isLoading }),
+      setHasHydrated: (hasHydrated) => set({ hasHydrated }),
     }),
     {
       name: "slide-handout-auth",
@@ -48,6 +48,9 @@ export const useAuthStore = create<AuthState>()(
         presenterEmail: state.presenterEmail,
         isDemo: state.isDemo,
       }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );

@@ -1,26 +1,33 @@
 import { useState } from "react";
-import { useAddinStore } from "../store/addinStore";
+import { useAddinConnectionStore } from "../store/connectionStore";
+import { useAddinUiStore } from "../store/uiStore";
 
 interface SettingsPanelProps {
   onClose: () => void;
 }
 
 export function SettingsPanel({ onClose }: SettingsPanelProps) {
-  const store = useAddinStore();
+  const convexUrlFromStore = useAddinConnectionStore((state) => state.convexUrl);
+  const presenterTokenFromStore = useAddinConnectionStore((state) => state.presenterToken);
+  const sessionIdFromStore = useAddinConnectionStore((state) => state.sessionId);
+  const setConnectionInfo = useAddinConnectionStore((state) => state.setConnectionInfo);
+  const resetRuntime = useAddinConnectionStore((state) => state.resetRuntime);
+  const setIsSettingsOpen = useAddinUiStore((state) => state.setIsSettingsOpen);
 
-  const [convexUrl, setConvexUrl] = useState(store.convexUrl);
-  const [presenterToken, setPresenterToken] = useState(store.presenterToken);
-  const [sessionId, setSessionId] = useState(store.sessionId);
+  const [convexUrl, setConvexUrl] = useState(convexUrlFromStore);
+  const [presenterToken, setPresenterToken] = useState(presenterTokenFromStore);
+  const [sessionId, setSessionId] = useState(sessionIdFromStore);
 
   const handleSave = () => {
-    store.setConnectionInfo({ convexUrl, presenterToken, sessionId });
+    setConnectionInfo({ convexUrl, presenterToken, sessionId });
     // Reload page to re-initialize Convex client with new URL
     window.location.reload();
   };
 
   const handleClear = () => {
-    store.setConnectionInfo({ convexUrl: "", presenterToken: "", sessionId: "" });
-    store.reset();
+    setConnectionInfo({ convexUrl: "", presenterToken: "", sessionId: "" });
+    resetRuntime();
+    setIsSettingsOpen(false);
     onClose();
   };
 
