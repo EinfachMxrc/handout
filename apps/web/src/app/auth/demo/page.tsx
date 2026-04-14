@@ -1,15 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
-import { api } from "@convex/_generated/api";
 import { useAuthStore } from "@/store/authStore";
-import { DEMO_EMAIL, DEMO_PASSWORD } from "@convex/_utils";
 import { setServerSessionCookie } from "@/lib/authSession";
 
 export default function DemoLoginPage() {
-  const login = useMutation(api.auth.login);
   const { setAuth, token } = useAuthStore();
   const router = useRouter();
   const [error, setError] = useState("");
@@ -29,15 +25,30 @@ export default function DemoLoginPage() {
 
     async function autoLogin() {
       try {
-        const result = await login({ email: DEMO_EMAIL, password: DEMO_PASSWORD });
+        const response = await fetch("/api/auth/demo", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        const body = (await response.json()) as {
+          error?: string;
+          token?: string;
+          name?: string;
+          email?: string;
+          isDemo?: boolean;
+        };
+
+        if (!response.ok || !body.token || !body.email) {
+          throw new Error(body.error ?? "Demo-Login fehlgeschlagen");
+        }
+
         if (cancelled) return;
-        setAuth(result.token, result.name ?? undefined, result.email, result.isDemo ?? false);
-        await setServerSessionCookie(result.token);
+        setAuth(body.token, body.name ?? undefined, body.email, body.isDemo ?? true);
         router.replace("/dashboard");
       } catch (err: unknown) {
         if (cancelled) return;
-        const message =
-          err instanceof Error ? err.message : "Demo-Login fehlgeschlagen";
+        const rawMessage = err instanceof Error ? err.message : "";
+        const message = rawMessage.trim() || "Demo-Login fehlgeschlagen";
         // Strip Convex internal prefixes for a cleaner user-facing message
         setError(
           message.includes("Ungueltige Anmeldedaten")
@@ -49,7 +60,7 @@ export default function DemoLoginPage() {
 
     autoLogin();
     return () => { cancelled = true; };
-  }, [attempt, login, router, setAuth, token]);
+  }, [attempt, router, setAuth, token]);
 
   if (error) {
     return (

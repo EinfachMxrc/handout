@@ -4,7 +4,8 @@
   "private": true,
   "packageManager": "pnpm@9.12.2",
   "scripts": {
-    "dev": "concurrently \"pnpm --filter web dev\" \"pnpm --filter powerpoint-addin dev\" \"pnpm --filter convex-backend dev\"",
+    "dev": "concurrently \"pnpm --filter web dev\" \"pnpm --filter powerpoint-addin dev\"",
+    "dev:all": "concurrently \"pnpm --filter web dev\" \"pnpm --filter powerpoint-addin dev\" \"pnpm --filter convex-backend dev\"",
     "dev:web": "pnpm --filter web dev",
     "dev:addin": "pnpm --filter powerpoint-addin dev",
     "dev:convex": "npx convex dev --run init:init",
@@ -18,7 +19,7 @@
     "type-check": "turbo run type-check"
   },
   "dependencies": {
-    "convex": "^1.17.4"
+    "convex": "^1.35.1"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",

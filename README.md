@@ -257,6 +257,23 @@ Folie 2 (zurück) → A + B noch sichtbar (highWaterSlide=5) ✓
 # 1. Einmalig: Convex initialisieren + Env-Dateien anlegen
 npx convex dev   # Anweisungen folgen, dann Ctrl+C
 pnpm setup       # URLs in Web-App & Add-in übernehmen
+```
+
+```bash
+# 2. Standard-Entwicklung (ohne Convex CLI-Prozess)
+pnpm dev
+# Startet Web + Add-in
+# Web: http://localhost:3000 (Fallback: http://localhost:3002)
+# Add-in: https://localhost:3001
+```
+
+```bash
+# 3. Convex separat starten (interaktiv)
+pnpm dev:convex
+
+# Optional: alles in einem Terminal (erfordert Convex-Login)
+pnpm dev:all
+```
 
 ## Monorepo-Tasks (Turbo)
 
@@ -274,13 +291,3 @@ pnpm test:all
 ```
 
 Hinweis für VPS/Deployments: `pnpm build` bleibt der primäre Einstiegspunkt. Falls ein bestehendes Deployment strikt auf die frühere Build-Reihenfolge abgestimmt war, steht `pnpm build:legacy` als kompatibler Fallback bereit.
-
-# Terminal A – Convex Backend (startet + seed automatisch):
-pnpm dev:convex
-
-# Terminal B – Web-App:
-pnpm dev:web
-
-# Browser: http://localhost:3000
-# Login: demo@example.com / demo1234
-```

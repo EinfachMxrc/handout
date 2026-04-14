@@ -1,14 +1,19 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTheme } from "next-themes";
 
 type Mode = "light" | "dark" | "system";
 
 export function ThemeToggle() {
   const { resolvedTheme, setTheme, theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
 
-  const mode = (theme ?? "system") as Mode;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const mode = ((mounted ? theme : "system") ?? "system") as Mode;
   const cycle = () => {
     const next: Mode = mode === "light" ? "dark" : mode === "dark" ? "system" : "light";
     setTheme(next);
@@ -16,10 +21,13 @@ export function ThemeToggle() {
 
   const effectiveMode = useMemo<Mode>(() => {
     if (mode === "system") {
+      if (!mounted) {
+        return "light";
+      }
       return resolvedTheme === "dark" ? "dark" : "light";
     }
     return mode;
-  }, [mode, resolvedTheme]);
+  }, [mode, mounted, resolvedTheme]);
 
   const label =
     mode === "light" ? "Zu Dunkel wechseln" : mode === "dark" ? "Zu System wechseln" : "Zu Hell wechseln";
