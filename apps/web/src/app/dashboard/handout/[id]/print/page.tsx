@@ -22,7 +22,9 @@ export default function HandoutPrintPage() {
 
   useEffect(() => {
     if (data) {
-      const timer = setTimeout(() => window.print(), 300);
+      const timer = setTimeout(() => {
+        globalThis.print?.();
+      }, 300);
       return () => clearTimeout(timer);
     }
   }, [data]);
@@ -63,7 +65,7 @@ export default function HandoutPrintPage() {
               <div className="text-sm" style={{ color: "var(--ink-soft)" }}>Alle Blöcke in Editor-Reihenfolge</div>
             </div>
           </div>
-          <button onClick={() => window.print()} className="btn-primary">
+          <button onClick={() => globalThis.print?.()} className="btn-primary">
             Drucken / Als PDF speichern
           </button>
         </div>

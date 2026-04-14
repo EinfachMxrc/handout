@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { api } from "@convex/_generated/api";
 import { useAuthStore } from "@/store/authStore";
 import { DEMO_EMAIL, DEMO_PASSWORD } from "@convex/_utils";
+import { setServerSessionCookie } from "@/lib/authSession";
 
 export default function DemoLoginPage() {
   const login = useMutation(api.auth.login);
@@ -17,7 +18,10 @@ export default function DemoLoginPage() {
   useEffect(() => {
     // Already logged in as demo? Go straight to dashboard
     if (token) {
-      router.replace("/dashboard");
+      void setServerSessionCookie(token)
+        .finally(() => {
+          router.replace("/dashboard");
+        });
       return;
     }
 
@@ -28,6 +32,7 @@ export default function DemoLoginPage() {
         const result = await login({ email: DEMO_EMAIL, password: DEMO_PASSWORD });
         if (cancelled) return;
         setAuth(result.token, result.name ?? undefined, result.email, result.isDemo ?? false);
+        await setServerSessionCookie(result.token);
         router.replace("/dashboard");
       } catch (err: unknown) {
         if (cancelled) return;
@@ -44,7 +49,7 @@ export default function DemoLoginPage() {
 
     autoLogin();
     return () => { cancelled = true; };
-  }, [attempt]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [attempt, login, router, setAuth, token]);
 
   if (error) {
     return (

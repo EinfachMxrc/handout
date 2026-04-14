@@ -36,20 +36,6 @@ export default function RootLayout({
             src="//unpkg.com/react-scan/dist/auto.global.js"
           />
         )}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  var mode = localStorage.getItem('theme');
-                  var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                  var wantsDark = mode === 'dark' || ((mode === 'system' || !mode) && prefersDark);
-                  if (wantsDark) document.documentElement.classList.add('dark');
-                } catch(e) {}
-              })();
-            `,
-          }}
-        />
       </head>
       <body className={`${spaceGrotesk.variable} ${dmSans.variable}`}>
         <ConvexClientProvider>

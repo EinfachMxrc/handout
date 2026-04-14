@@ -1,5 +1,16 @@
 "use client"
-
+export {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectScrollDownButton,
+  SelectScrollUpButton,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+}
 import * as React from "react"
 import { Select as SelectPrimitive } from "@base-ui/react/select"
 

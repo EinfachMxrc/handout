@@ -21,7 +21,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
   const handleSave = () => {
     setConnectionInfo({ convexUrl, presenterToken, sessionId });
     // Reload page to re-initialize Convex client with new URL
-    window.location.reload();
+    globalThis.location?.reload();
   };
 
   const handleClear = () => {

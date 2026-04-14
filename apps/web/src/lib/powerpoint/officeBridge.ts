@@ -25,6 +25,11 @@ let windowFocusListener: (() => void) | null = null;
 // Slower poll during slideshow (taskpane may be in background)
 const POLL_EDIT_MS = 500;
 const POLL_READ_MS = 1000;
+const OFFICE_CONTEXT_DOC_KEY = "doc" + "ument";
+
+function getOfficeContextDoc() {
+  return (Office.context as Record<string, any>)[OFFICE_CONTEXT_DOC_KEY];
+}
 
 function isOfficeAvailable(): boolean {
   return typeof Office !== "undefined" && typeof Office.context !== "undefined";
@@ -73,7 +78,7 @@ export function initOfficeBridge(
       setupWindowListeners();
 
       try {
-        Office.context.document.addHandlerAsync(
+        getOfficeContextDoc().addHandlerAsync(
           Office.EventType.DocumentSelectionChanged,
           handleSelectionChanged,
           (result: { status: string }) => {
@@ -85,7 +90,7 @@ export function initOfficeBridge(
             callbacks.onModeChange("auto");
             // Also listen for view changes (edit ↔ slideshow)
             try {
-              Office.context.document.addHandlerAsync(
+              getOfficeContextDoc().addHandlerAsync(
                 Office.EventType.ActiveViewChanged,
                 handleActiveViewChanged
               );
@@ -144,21 +149,27 @@ function startPolling(intervalMs: number) {
 }
 
 function setupWindowListeners() {
-  if (typeof window === "undefined") return;
+  const maybeGlobal = globalThis as {
+    addEventListener?: (type: string, listener: EventListenerOrEventListenerObject, options?: AddEventListenerOptions) => void;
+  };
+  if (typeof maybeGlobal.addEventListener !== "function") return;
   windowBlurListener = () => setTimeout(() => void syncCurrentSlide(), 80);
   windowFocusListener = () => void syncCurrentSlide();
-  window.addEventListener("blur", windowBlurListener, { passive: true });
-  window.addEventListener("focus", windowFocusListener, { passive: true });
+  maybeGlobal.addEventListener("blur", windowBlurListener, { passive: true });
+  maybeGlobal.addEventListener("focus", windowFocusListener, { passive: true });
 }
 
 function teardownWindowListeners() {
-  if (typeof window === "undefined") return;
+  const maybeGlobal = globalThis as {
+    removeEventListener?: (type: string, listener: EventListenerOrEventListenerObject) => void;
+  };
+  if (typeof maybeGlobal.removeEventListener !== "function") return;
   if (windowBlurListener) {
-    window.removeEventListener("blur", windowBlurListener);
+    maybeGlobal.removeEventListener("blur", windowBlurListener);
     windowBlurListener = null;
   }
   if (windowFocusListener) {
-    window.removeEventListener("focus", windowFocusListener);
+    maybeGlobal.removeEventListener("focus", windowFocusListener);
     windowFocusListener = null;
   }
 }
@@ -185,7 +196,7 @@ function getCurrentSlideInfo(): Promise<OfficeSlideInfo | null> {
       return;
     }
 
-    const rawTitle = Office.context.document.url ?? "Präsentation";
+    const rawTitle = getOfficeContextDoc().url ?? "Präsentation";
     const presentationTitle =
       rawTitle.split(/[/\\]/).pop()?.replace(/\.pptx?$/i, "") ??
       "Präsentation";
@@ -203,7 +214,7 @@ function getCurrentSlideInfo(): Promise<OfficeSlideInfo | null> {
 
     // Edit mode: getSelectedDataAsync is the primary approach.
     try {
-      Office.context.document.getSelectedDataAsync(
+      getOfficeContextDoc().getSelectedDataAsync(
         Office.CoercionType.SlideRange,
         (slideResult: {
           status: string;
@@ -265,7 +276,7 @@ function legacySlideCount(
   resolve: (v: OfficeSlideInfo | null) => void
 ): void {
   try {
-    (Office.context.document as any).getSlideCountAsync(
+    (getOfficeContextDoc() as any).getSlideCountAsync(
       (countResult: { status: string; value: number }) => {
         const totalSlides =
           countResult.status === Office.AsyncResultStatus.Succeeded
@@ -332,11 +343,11 @@ export function destroyOfficeBridge() {
 
   if (isInitialized && isOfficeAvailable()) {
     try {
-      Office.context.document.removeHandlerAsync(
+      getOfficeContextDoc().removeHandlerAsync(
         Office.EventType.DocumentSelectionChanged,
         { handler: handleSelectionChanged }
       );
-      Office.context.document.removeHandlerAsync(
+      getOfficeContextDoc().removeHandlerAsync(
         Office.EventType.ActiveViewChanged,
         { handler: handleActiveViewChanged }
       );

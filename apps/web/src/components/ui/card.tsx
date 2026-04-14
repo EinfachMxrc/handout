@@ -1,5 +1,13 @@
 import * as React from "react"
-
+export {
+  Card,
+  CardHeader,
+  CardFooter,
+  CardTitle,
+  CardAction,
+  CardDescription,
+  CardContent,
+}
 import { cn } from "@/lib/utils"
 
 function Card({

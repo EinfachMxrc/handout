@@ -10,6 +10,10 @@ import {
   initOfficeBridge,
   type SyncCapability,
 } from "@/lib/powerpoint/officeBridge";
+import {
+  clearServerSessionCookie,
+  setServerSessionCookie,
+} from "@/lib/authSession";
 
 const STORAGE_KEY = "slide-handout-powerpoint-addin";
 
@@ -400,6 +404,7 @@ export function PowerPointAddinClient() {
       setToken(result.token);
       setPresenterEmail(result.email ?? loginEmail.trim());
       setPresenterName(result.name ?? "");
+      await setServerSessionCookie(result.token);
       setLoginPassword("");
     } catch (error) {
       setLoginError(getErrorMessage(error));
@@ -412,6 +417,8 @@ export function PowerPointAddinClient() {
     const currentToken = token;
     resetAuthSession();
     setActionError(null);
+
+    await clearServerSessionCookie();
 
     if (!currentToken) {
       return;

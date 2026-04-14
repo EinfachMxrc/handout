@@ -7,6 +7,7 @@ import Link from "next/link";
 import { api } from "@convex/_generated/api";
 import { useAuthStore } from "@/store/authStore";
 import { isConvexConfigured, CONVEX_MUTATION_TIMEOUT_MS } from "@/lib/convex";
+import { setServerSessionCookie } from "@/lib/authSession";
 
 export default function RegisterPage() {
   const [name, setName] = useState("");
@@ -42,7 +43,8 @@ export default function RegisterPage() {
       );
       const result = await Promise.race([register({ email, password, name }), timeout]);
       setAuth(result.token as string, name, email, result.isDemo ?? false);
-      router.push("/dashboard");
+      await setServerSessionCookie(result.token as string);
+      router.replace("/dashboard");
     } catch (err: any) {
       setError(err.message ?? "Registrierung fehlgeschlagen");
     } finally {
