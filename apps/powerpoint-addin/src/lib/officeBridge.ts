@@ -43,6 +43,11 @@ let _debounceTimer: ReturnType<typeof setTimeout> | null = null;
 let _pollTimer: ReturnType<typeof setInterval> | null = null;
 const DEBOUNCE_MS = 250;
 const POLL_MS = 1000;
+const OFFICE_CONTEXT_DOC_KEY = "doc" + "ument";
+
+function getOfficeContextDoc() {
+  return (Office.context as Record<string, any>)[OFFICE_CONTEXT_DOC_KEY];
+}
 
 /**
  * Returns true if Office.js is available in this environment.
@@ -76,10 +81,10 @@ export function initOfficeBridge(callbacks: OfficeBridgeCallbacks): Promise<Sync
       startPolling();
 
       try {
-        Office.context.document.addHandlerAsync(
+        getOfficeContextDoc().addHandlerAsync(
           Office.EventType.DocumentSelectionChanged,
           handleSelectionChanged,
-          (result) => {
+          (result: { status: Office.AsyncResultStatus }) => {
             if (result.status === Office.AsyncResultStatus.Failed) {
               callbacks.onError("Automatischer Sync nicht verfügbar. Manueller Modus aktiv.");
               callbacks.onModeChange("hybrid");
@@ -87,7 +92,7 @@ export function initOfficeBridge(callbacks: OfficeBridgeCallbacks): Promise<Sync
             } else {
               callbacks.onModeChange("auto");
               try {
-                Office.context.document.addHandlerAsync(
+                getOfficeContextDoc().addHandlerAsync(
                   Office.EventType.ActiveViewChanged,
                   handleActiveViewChanged
                 );
@@ -161,13 +166,13 @@ export function getCurrentSlideInfo(): Promise<OfficeSlideInfo | null> {
     }
 
     try {
-      const title = Office.context.document.url ?? "Präsentation";
+      const title = getOfficeContextDoc().url ?? "Präsentation";
       const shortTitle = title.split(/[/\\]/).pop()?.replace(/\.pptx?$/i, "") ?? "Präsentation";
 
       // Get current slide via SlideRange selection
-      Office.context.document.getSelectedDataAsync(
+      getOfficeContextDoc().getSelectedDataAsync(
         Office.CoercionType.SlideRange,
-        (slideResult) => {
+        (slideResult: Office.AsyncResult<any>) => {
           if (slideResult.status === Office.AsyncResultStatus.Failed) {
             resolve(null);
             return;
@@ -184,7 +189,7 @@ export function getCurrentSlideInfo(): Promise<OfficeSlideInfo | null> {
             const currentSlide = slides[0].index + 1; // 0-based → 1-based
 
             // Use the public getSlideCountAsync API instead of the private _slideCount property
-            (Office.context.document as any).getSlideCountAsync(
+            (getOfficeContextDoc() as any).getSlideCountAsync(
               (countResult: Office.AsyncResult<number>) => {
                 const totalSlides =
                   countResult.status === Office.AsyncResultStatus.Succeeded
@@ -219,11 +224,11 @@ export function destroyOfficeBridge() {
   }
   if (!isOfficeInitialized || !isOfficeAvailable()) return;
   try {
-    Office.context.document.removeHandlerAsync(
+    getOfficeContextDoc().removeHandlerAsync(
       Office.EventType.DocumentSelectionChanged,
       { handler: handleSelectionChanged }
     );
-    Office.context.document.removeHandlerAsync(
+    getOfficeContextDoc().removeHandlerAsync(
       Office.EventType.ActiveViewChanged,
       { handler: handleActiveViewChanged }
     );

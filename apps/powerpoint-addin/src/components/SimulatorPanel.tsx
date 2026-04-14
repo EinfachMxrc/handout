@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from "react";
 import { SlideSimulator } from "../lib/simulator";
-import { useAddinStore } from "../store/addinStore";
+import { useAddinSimulatorStore } from "../store/simulatorStore";
 
 interface SimulatorPanelProps {
   onSlideChange: (slideNumber: number, total: number) => void;
@@ -9,7 +9,9 @@ interface SimulatorPanelProps {
 }
 
 export function SimulatorPanel({ onSlideChange, currentSlide, totalSlides }: SimulatorPanelProps) {
-  const store = useAddinStore();
+  const simulatorTotalSlides = useAddinSimulatorStore((state) => state.simulatorTotalSlides);
+  const simulatorAutoAdvanceMs = useAddinSimulatorStore((state) => state.simulatorAutoAdvanceMs);
+  const setSimulatorConfig = useAddinSimulatorStore((state) => state.setSimulatorConfig);
   const simRef = useRef<SlideSimulator | null>(null);
   const [isAutoRunning, setIsAutoRunning] = useState(false);
   const [jumpInput, setJumpInput] = useState("");
@@ -17,13 +19,13 @@ export function SimulatorPanel({ onSlideChange, currentSlide, totalSlides }: Sim
   // Initialize simulator
   useEffect(() => {
     simRef.current = new SlideSimulator({
-      totalSlides: store.simulatorTotalSlides,
+      totalSlides: simulatorTotalSlides,
       autoAdvanceMs: 0,
       onSlideChange,
     });
 
     return () => simRef.current?.stop();
-  }, [store.simulatorTotalSlides]);
+  }, [onSlideChange, simulatorTotalSlides]);
 
   const handleNext = () => simRef.current?.nextSlide();
   const handlePrev = () => simRef.current?.previousSlide();
@@ -45,8 +47,8 @@ export function SimulatorPanel({ onSlideChange, currentSlide, totalSlides }: Sim
       setIsAutoRunning(false);
     } else {
       simRef.current = new SlideSimulator({
-        totalSlides: store.simulatorTotalSlides,
-        autoAdvanceMs: 3000,
+        totalSlides: simulatorTotalSlides,
+        autoAdvanceMs: simulatorAutoAdvanceMs || 3000,
         onSlideChange,
       });
       simRef.current.start();
@@ -97,9 +99,9 @@ export function SimulatorPanel({ onSlideChange, currentSlide, totalSlides }: Sim
         <input
           type="number"
           className="input-sm w-16"
-          value={store.simulatorTotalSlides}
+          value={simulatorTotalSlides}
           onChange={(e) =>
-            store.setSimulatorConfig(parseInt(e.target.value) || 10, store.simulatorAutoAdvanceMs)
+            setSimulatorConfig(parseInt(e.target.value, 10) || 10, simulatorAutoAdvanceMs)
           }
           min={1}
         />

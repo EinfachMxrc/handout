@@ -1,12 +1,16 @@
 "use client";
 
-import { useMemo, useState, useCallback, useEffect } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
 import { api } from "@convex/_generated/api";
 import { useAuthStore } from "@/store/authStore";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import type { Id } from "@convex/_generated/dataModel";
 
 export default function DashboardPage() {
@@ -27,9 +31,24 @@ export default function DashboardPage() {
   const [newHandoutTitle, setNewHandoutTitle] = useState("");
   const [newHandoutDesc, setNewHandoutDesc] = useState("");
   const [isCreating, setIsCreating] = useState(false);
-  const [selectedSessions, setSelectedSessions] = useState<Set<string>>(new Set());
+  const [selectedSessions, setSelectedSessions] = useState<Set<Id<"presentationSessions">>>(new Set());
 
-  const toggleSession = useCallback((id: string) => {
+  const sessionIdSet = useMemo(
+    () => new Set((sessions ?? []).map((session) => session._id)),
+    [sessions]
+  );
+
+  const effectiveSelectedSessions = useMemo(() => {
+    const effective = new Set<Id<"presentationSessions">>();
+    selectedSessions.forEach((id) => {
+      if (sessionIdSet.has(id)) {
+        effective.add(id);
+      }
+    });
+    return effective;
+  }, [selectedSessions, sessionIdSet]);
+
+  const toggleSession = useCallback((id: Id<"presentationSessions">) => {
     setSelectedSessions((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id); else next.add(id);
@@ -40,34 +59,25 @@ export default function DashboardPage() {
   const toggleAllSessions = useCallback(() => {
     if (!sessions) return;
     setSelectedSessions((prev) =>
-      prev.size === sessions.length ? new Set() : new Set(sessions.map((s) => s._id))
+      effectiveSelectedSessions.size === sessions.length
+        ? new Set()
+        : new Set(sessions.map((s) => s._id))
     );
-  }, [sessions]);
-
-  // Prune selectedSessions whenever sessions changes (e.g. after per-row delete or refetch)
-  useEffect(() => {
-    if (!sessions) return;
-    const currentIds = new Set<string>(sessions.map((s) => s._id));
-    setSelectedSessions((prev) => {
-      const pruned = new Set<string>();
-      prev.forEach((id) => { if (currentIds.has(id)) pruned.add(id); });
-      return pruned;
-    });
-  }, [sessions]);
+  }, [effectiveSelectedSessions.size, sessions]);
 
   const handleBulkDelete = async () => {
-    if (!token || selectedSessions.size === 0) return;
-    if (!confirm(`${selectedSessions.size} Session(s) löschen?`)) return;
+    if (!token || effectiveSelectedSessions.size === 0) return;
+    if (!confirm(`${effectiveSelectedSessions.size} Session(s) löschen?`)) return;
     await deleteSessions({
       token,
-      sessionIds: [...selectedSessions] as Id<"presentationSessions">[],
+      sessionIds: [...effectiveSelectedSessions],
     });
     setSelectedSessions(new Set());
   };
 
-  const handleReopenSession = async (sessionId: string) => {
+  const handleReopenSession = async (sessionId: Id<"presentationSessions">) => {
     if (!token) return;
-    await reopenSession({ token, sessionId: sessionId as Id<"presentationSessions"> });
+    await reopenSession({ token, sessionId });
   };
 
   const counts = useMemo(() => {
@@ -134,9 +144,9 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="flex gap-3">
-          <button className="btn-primary" onClick={() => setIsCreateOpen(true)} disabled={isDemo}>
+          <Button onClick={() => setIsCreateOpen(true)} disabled={isDemo}>
             Neues Handout
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -157,14 +167,15 @@ export default function DashboardPage() {
       </div>
 
       {/* Tabs */}
-      <div className="segmented-shell">
-        {(["handouts", "sessions"] as const).map((tab) => (
-          <button key={tab} className="segmented-button" data-active={activeTab === tab}
-            onClick={() => setActiveTab(tab)}>
-            {tab === "handouts" ? "Handouts" : "Sessions"}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => setActiveTab(value as "handouts" | "sessions")}
+      >
+        <TabsList>
+          <TabsTrigger value="handouts">Handouts</TabsTrigger>
+          <TabsTrigger value="sessions">Sessions</TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {/* Handouts Tab */}
       {activeTab === "handouts" && (
@@ -232,14 +243,14 @@ export default function DashboardPage() {
                 <input
                   type="checkbox"
                   className="h-4 w-4"
-                  checked={selectedSessions.size === sessions.length}
+                  checked={effectiveSelectedSessions.size === sessions.length}
                   onChange={toggleAllSessions}
                 />
                 Alle auswählen
               </label>
-              {selectedSessions.size > 0 && (
+              {effectiveSelectedSessions.size > 0 && (
                 <button className="btn-danger text-xs px-3 py-1.5" onClick={handleBulkDelete} disabled={isDemo}>
-                  {selectedSessions.size} löschen
+                  {effectiveSelectedSessions.size} löschen
                 </button>
               )}
             </div>
@@ -261,7 +272,7 @@ export default function DashboardPage() {
                   <input
                     type="checkbox"
                     className="h-4 w-4 flex-shrink-0"
-                    checked={selectedSessions.has(s._id)}
+                    checked={effectiveSelectedSessions.has(s._id)}
                     onChange={() => toggleSession(s._id)}
                     aria-label={`Session ${s.publicToken} auswählen`}
                   />
@@ -301,23 +312,23 @@ export default function DashboardPage() {
         <form onSubmit={handleCreateHandout} className="space-y-4">
           <div>
             <label className="label">Titel</label>
-            <input className="input" value={newHandoutTitle}
+            <Input value={newHandoutTitle}
               onChange={(e) => setNewHandoutTitle(e.target.value)}
               placeholder="z. B. Einführung in Machine Learning" required autoFocus />
           </div>
           <div>
             <label className="label">Beschreibung (optional)</label>
-            <textarea className="textarea" value={newHandoutDesc}
+            <Textarea value={newHandoutDesc}
               onChange={(e) => setNewHandoutDesc(e.target.value)} rows={3}
               placeholder="Worum geht es in diesem Handout?" />
           </div>
           <div className="flex gap-3">
-            <button type="submit" className="btn-primary flex-1" disabled={isCreating || isDemo}>
+            <Button type="submit" className="flex-1" disabled={isCreating || isDemo}>
               {isCreating ? "Erstellt…" : "Erstellen"}
-            </button>
-            <button type="button" className="btn-secondary" onClick={() => setIsCreateOpen(false)}>
+            </Button>
+            <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>
               Abbrechen
-            </button>
+            </Button>
           </div>
         </form>
       </Modal>

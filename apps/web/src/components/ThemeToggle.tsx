@@ -1,54 +1,33 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useTheme } from "next-themes";
 
 type Mode = "light" | "dark" | "system";
 
-/**
- * 3-Mode Theme Toggle mit Zyklus: Light → Dark → System → Light.
- * System-Mode folgt `prefers-color-scheme` live via matchMedia.
- */
-function applyMode(mode: Mode): void {
-  const root = document.documentElement;
-  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-  const wantsDark = mode === "dark" || (mode === "system" && prefersDark);
-  root.classList.toggle("dark", wantsDark);
-}
-
-function getStoredMode(): Mode {
-  if (typeof window === "undefined") return "system";
-  const stored = localStorage.getItem("theme");
-  if (stored === "dark" || stored === "light" || stored === "system") return stored;
-  return "system";
-}
-
 export function ThemeToggle() {
-  const [mode, setMode] = useState<Mode>("system");
+  const { resolvedTheme, setTheme, theme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const initial = getStoredMode();
-    setMode(initial);
-    applyMode(initial);
     setMounted(true);
   }, []);
 
-  useEffect(() => {
-    if (!mounted || mode !== "system") return;
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const listener = () => applyMode("system");
-    mq.addEventListener("change", listener);
-    return () => mq.removeEventListener("change", listener);
-  }, [mode, mounted]);
-
-  const cycle = useCallback(() => {
+  const mode = ((mounted ? theme : "system") ?? "system") as Mode;
+  const cycle = () => {
     const next: Mode = mode === "light" ? "dark" : mode === "dark" ? "system" : "light";
-    setMode(next);
-    localStorage.setItem("theme", next);
-    applyMode(next);
-  }, [mode]);
+    setTheme(next);
+  };
 
-  if (!mounted) return null;
+  const effectiveMode = useMemo<Mode>(() => {
+    if (mode === "system") {
+      if (!mounted) {
+        return "light";
+      }
+      return resolvedTheme === "dark" ? "dark" : "light";
+    }
+    return mode;
+  }, [mode, mounted, resolvedTheme]);
 
   const label =
     mode === "light" ? "Zu Dunkel wechseln" : mode === "dark" ? "Zu System wechseln" : "Zu Hell wechseln";
@@ -60,7 +39,7 @@ export function ThemeToggle() {
       aria-label={label}
       title={`Theme: ${mode === "system" ? "System" : mode === "dark" ? "Dunkel" : "Hell"}`}
     >
-      {mode === "light" && (
+      {effectiveMode === "light" && (
         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path
             strokeLinecap="round"
@@ -69,7 +48,7 @@ export function ThemeToggle() {
           />
         </svg>
       )}
-      {mode === "dark" && (
+      {effectiveMode === "dark" && (
         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path
             strokeLinecap="round"

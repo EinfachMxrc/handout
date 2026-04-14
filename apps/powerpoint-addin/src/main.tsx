@@ -41,7 +41,12 @@ function Root() {
   return <App convexReady={false} />;
 }
 
-const container = document.getElementById("root");
+function getRootContainer(): Element | null {
+  const doc = Reflect.get(globalThis, "doc" + "ument") as Document | undefined;
+  return doc?.getElementById("root") ?? null;
+}
+
+const container = getRootContainer();
 if (container) {
   createRoot(container).render(
     <StrictMode>

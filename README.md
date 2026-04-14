@@ -219,7 +219,7 @@ Folie 2 (zurück) → A + B noch sichtbar (highWaterSlide=5) ✓
 
 ## Was fertig ist
 
-- [x] Monorepo-Struktur (pnpm workspaces)
+- [x] Monorepo-Struktur (pnpm workspaces + Turborepo task pipeline)
 - [x] Reveal Engine mit vollständigen Unit-Tests (19 Tests)
 - [x] Convex Backend: Schema, Auth, Handout-CRUD, Session-Management
 - [x] Serverseitige Sicherheit: Öffentliche Queries filtern Inhalte
@@ -257,13 +257,37 @@ Folie 2 (zurück) → A + B noch sichtbar (highWaterSlide=5) ✓
 # 1. Einmalig: Convex initialisieren + Env-Dateien anlegen
 npx convex dev   # Anweisungen folgen, dann Ctrl+C
 pnpm setup       # URLs in Web-App & Add-in übernehmen
+```
 
-# Terminal A – Convex Backend (startet + seed automatisch):
+```bash
+# 2. Standard-Entwicklung (ohne Convex CLI-Prozess)
+pnpm dev
+# Startet Web + Add-in
+# Web: http://localhost:3000 (Fallback: http://localhost:3002)
+# Add-in: https://localhost:3001
+```
+
+```bash
+# 3. Convex separat starten (interaktiv)
 pnpm dev:convex
 
-# Terminal B – Web-App:
-pnpm dev:web
-
-# Browser: http://localhost:3000
-# Login: demo@example.com / demo1234
+# Optional: alles in einem Terminal (erfordert Convex-Login)
+pnpm dev:all
 ```
+
+## Monorepo-Tasks (Turbo)
+
+```bash
+# Build (Turbo Pipeline)
+pnpm build
+
+# Legacy fallback (identisches Paket-zu-Paket Build-Verhalten wie zuvor)
+pnpm build:legacy
+
+# Type checks / Tests
+pnpm type-check
+pnpm test
+pnpm test:all
+```
+
+Hinweis für VPS/Deployments: `pnpm build` bleibt der primäre Einstiegspunkt. Falls ein bestehendes Deployment strikt auf die frühere Build-Reihenfolge abgestimmt war, steht `pnpm build:legacy` als kompatibler Fallback bereit.

@@ -3,10 +3,10 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "dev": "convex dev",
+    "dev": "convex dev --run init:init",
     "deploy": "convex deploy"
   },
   "dependencies": {
-    "convex": "^1.17.4"
+    "convex": "^1.35.1"
   }
 }

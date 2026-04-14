@@ -7,12 +7,12 @@ export default function PowerPointAddinPage() {
       <Script id="office-history-cache" strategy="beforeInteractive">
         {`
           (function () {
-            window.__slideHandoutHistoryCache = {
-              pushState: window.history && typeof window.history.pushState === "function"
-                ? window.history.pushState.bind(window.history)
+            globalThis.__slideHandoutHistoryCache = {
+              pushState: globalThis.history && typeof globalThis.history.pushState === "function"
+                ? globalThis.history.pushState.bind(globalThis.history)
                 : null,
-              replaceState: window.history && typeof window.history.replaceState === "function"
-                ? window.history.replaceState.bind(window.history)
+              replaceState: globalThis.history && typeof globalThis.history.replaceState === "function"
+                ? globalThis.history.replaceState.bind(globalThis.history)
                 : null,
             };
           })();
@@ -28,31 +28,31 @@ export default function PowerPointAddinPage() {
             var noop = function () {};
 
             function restoreHistory() {
-              if (!window.history) {
+              if (!globalThis.history) {
                 return;
               }
 
-              var cache = window.__slideHandoutHistoryCache || {};
-              if (typeof window.history.pushState !== "function") {
-                window.history.pushState = cache.pushState || noop;
+              var cache = globalThis.__slideHandoutHistoryCache || {};
+              if (typeof globalThis.history.pushState !== "function") {
+                globalThis.history.pushState = cache.pushState || noop;
               }
-              if (typeof window.history.replaceState !== "function") {
-                window.history.replaceState = cache.replaceState || noop;
+              if (typeof globalThis.history.replaceState !== "function") {
+                globalThis.history.replaceState = cache.replaceState || noop;
               }
             }
 
             restoreHistory();
 
             var attempts = 0;
-            var interval = window.setInterval(function () {
+            var interval = globalThis.setInterval(function () {
               attempts += 1;
               restoreHistory();
               if (attempts >= 40) {
-                window.clearInterval(interval);
+                globalThis.clearInterval(interval);
               }
             }, 50);
 
-            window.addEventListener("load", restoreHistory);
+            globalThis.addEventListener("load", restoreHistory);
           })();
         `}
       </Script>

@@ -39,17 +39,9 @@ export default function PublicHandoutPage() {
   }, [publicToken, sessionInfo?.status, pingViewer]);
 
   const prevBlockIdsRef = useRef<Set<string>>(new Set());
+  const blockRefs = useRef<Map<string, HTMLElement>>(new Map());
   const [newBlockIds, setNewBlockIds] = useState<Set<string>>(new Set());
   const [flashBlockIds, setFlashBlockIds] = useState<Set<string>>(new Set());
-  const wasHiddenRef = useRef(false);
-
-  // Track whether the tab was in the background; seed with actual initial state
-  useEffect(() => {
-    wasHiddenRef.current = document.hidden; // capture initial visibility state
-    const onVisibility = () => { wasHiddenRef.current = document.hidden; };
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => document.removeEventListener("visibilitychange", onVisibility);
-  }, []);
 
   useEffect(() => {
     if (!visibleBlocks) return;
@@ -69,35 +61,31 @@ export default function PublicHandoutPage() {
 
     // Scroll to the first new block
     setTimeout(() => {
-      const el = document.querySelector(`[data-block-id="${[...freshIds][0]}"]`);
+      const el = blockRefs.current.get([...freshIds][0]);
       el?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 100);
 
-    // Flash terminals if the tab was hidden when the update came in
-    let flashTimer: ReturnType<typeof setTimeout> | undefined;
-    if (wasHiddenRef.current) {
-      setFlashBlockIds(freshIds);
-      flashTimer = setTimeout(() => setFlashBlockIds(new Set()), 3500);
-    }
+    // Flash terminals for newly visible content.
+    setFlashBlockIds(freshIds);
+    const flashTimer = setTimeout(() => setFlashBlockIds(new Set()), 3500);
 
     const timer = setTimeout(() => setNewBlockIds(new Set()), 2000);
     return () => {
       clearTimeout(timer);
-      if (flashTimer) clearTimeout(flashTimer);
+      clearTimeout(flashTimer);
     };
   }, [visibleBlocks]);
 
-  const handlePrint = () => window.print();
+  const handlePrint = () => {
+    if (typeof globalThis.print === "function") {
+      globalThis.print();
+    }
+  };
 
   const handleDownloadPDF = () => {
-    const previousTitle = document.title;
-    document.title = sessionInfo?.handoutTitle || "handout";
-    const restoreTitle = () => {
-      document.title = previousTitle;
-      window.removeEventListener("afterprint", restoreTitle);
-    };
-    window.addEventListener("afterprint", restoreTitle);
-    window.print();
+    if (typeof globalThis.print === "function") {
+      globalThis.print();
+    }
   };
 
   if (sessionInfo === undefined || visibleBlocks === undefined) {
@@ -276,6 +264,13 @@ export default function PublicHandoutPage() {
                 <article
                   key={block.id}
                   data-block-id={block.id}
+                  ref={(el) => {
+                    if (el) {
+                      blockRefs.current.set(block.id, el);
+                    } else {
+                      blockRefs.current.delete(block.id);
+                    }
+                  }}
                   className={`handout-block card overflow-hidden ${layoutClass} ${isNew ? "ring-2 ring-emerald-300 dark:ring-emerald-500" : ""} ${block.imagePosition === "background" ? "relative" : ""}`}
                 >
                   <div className="h-1 w-full rounded-t-lg bg-gradient-to-r from-[#5BB8B8] to-[#E8998D]" />

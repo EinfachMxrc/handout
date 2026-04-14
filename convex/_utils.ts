@@ -5,8 +5,8 @@
 import { ConvexError } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
 
-export type BlockDoc = Doc<"handoutBlocks">;
-export type SessionDoc = Doc<"presentationSessions">;
+type BlockDoc = Doc<"handoutBlocks">;
+type SessionDoc = Doc<"presentationSessions">;
 
 export const DEMO_EMAIL = "demo@example.com";
 export const DEMO_PASSWORD = "demo1234";
@@ -28,7 +28,7 @@ export function generateToken(length: number = 12): string {
  * Do NOT use for new accounts.
  * Hash format: "sha256_<hex>"
  */
-export async function sha256Hash(password: string): Promise<string> {
+async function sha256Hash(password: string): Promise<string> {
   const salted = `slide-handout:${password}`;
   const data = new TextEncoder().encode(salted);
   const buffer = await crypto.subtle.digest("SHA-256", data);
@@ -104,7 +104,7 @@ export function assertNotDemo(presenter: { isDemo?: boolean; email?: string | un
  * that still have an mvp_-prefixed hash are upgraded to SHA-256 on next login.
  * Do NOT use for new accounts.
  */
-export function simpleHash(password: string): string {
+function simpleHash(password: string): string {
   let hash = 0;
   const salted = `slide-handout-mvp:${password}`;
   for (let i = 0; i < salted.length; i++) {

@@ -11,8 +11,7 @@ interface QRCodeDialogProps {
 }
 
 export function QRCodeDialog({ isOpen, onClose, publicUrl, handoutTitle }: QRCodeDialogProps) {
-  const fullUrl =
-    typeof window !== "undefined" ? `${window.location.origin}${publicUrl}` : publicUrl;
+  const fullUrl = `${globalThis.location?.origin ?? ""}${publicUrl}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(fullUrl);

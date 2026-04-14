@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
@@ -12,9 +12,6 @@ import { SlideControls } from "@/components/dashboard/SlideControls";
 import { QRCodeDialog } from "@/components/dashboard/QRCodeDialog";
 import { Badge } from "@/components/ui/Badge";
 import { useAuthStore } from "@/store/authStore";
-import { convexClient } from "@/lib/convex";
-
-const VIEWER_COUNT_POLL_INTERVAL = 10_000;
 
 export default function SessionPage() {
   const params = useParams();
@@ -33,58 +30,20 @@ export default function SessionPage() {
   const triggerBlock = useMutation(api.sessions.triggerBlockManually);
   const unTriggerBlock = useMutation(api.sessions.unTriggerBlockManually);
 
-  const [viewerCount, setViewerCount] = useState<number>(0);
-  const [isViewerCountLoaded, setIsViewerCountLoaded] = useState(false);
-  const activeSessionId = useMemo(() => data?.session._id, [data?.session._id]);
-  const activeSessionStatus = useMemo(() => data?.session.status, [data?.session.status]);
-
-  useEffect(() => {
-    if (!token || !activeSessionId || activeSessionStatus !== "live") {
-      setViewerCount(0);
-      setIsViewerCountLoaded(false);
-      return;
-    }
-
-    let isMounted = true;
-    let isFetching = false;
-
-    const fetchViewerCount = async () => {
-      if (isFetching) return;
-      isFetching = true;
-
-      try {
-        const count = await convexClient.query(api.viewers.getViewerCount, {
-          token,
-          sessionId: activeSessionId,
-        });
-        if (isMounted) {
-          setViewerCount(count);
-          setIsViewerCountLoaded(true);
-        }
-      } catch (error) {
-        console.error("Failed to fetch viewer count", {
-          sessionId: activeSessionId,
-          error,
-        });
-        if (isMounted) {
-          setViewerCount(0);
-          setIsViewerCountLoaded(true);
-        }
-      } finally {
-        isFetching = false;
-      }
-    };
-
-    void fetchViewerCount();
-    const interval = window.setInterval(() => {
-      void fetchViewerCount();
-    }, VIEWER_COUNT_POLL_INTERVAL);
-
-    return () => {
-      isMounted = false;
-      window.clearInterval(interval);
-    };
-  }, [token, activeSessionId, activeSessionStatus]);
+  const activeSessionId = data?.session._id;
+  const activeSessionStatus = data?.session.status;
+  const viewerCountQuery = useQuery(
+    api.viewers.getViewerCount,
+    token && activeSessionId && activeSessionStatus === "live"
+      ? { token, sessionId: activeSessionId }
+      : "skip"
+  );
+  const viewerCount =
+    activeSessionStatus === "live" && typeof viewerCountQuery === "number"
+      ? viewerCountQuery
+      : 0;
+  const isViewerCountLoaded =
+    activeSessionStatus !== "live" || viewerCountQuery !== undefined;
 
   const [isQROpen, setIsQROpen] = useState(false);
   const [activeView, setActiveView] = useState<"control" | "preview">("control");
@@ -96,8 +55,7 @@ export default function SessionPage() {
   const { session, handout, blocks } = data;
   const sessionId = session._id;
   const publicUrl = `/h/${session.publicToken}`;
-  const fullPublicUrl =
-    typeof window !== "undefined" ? `${window.location.origin}${publicUrl}` : publicUrl;
+  const fullPublicUrl = `${globalThis.location?.origin ?? ""}${publicUrl}`;
 
   const statusColor: Record<string, "green" | "yellow" | "gray"> = {
     live: "green",
