@@ -16,7 +16,7 @@
     "type-check": "pnpm -r type-check"
   },
   "dependencies": {
-    "convex": "^1.17.4"
+    "convex": "^1.35.1"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",
