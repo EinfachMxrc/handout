@@ -4,8 +4,7 @@
  */
 
 import { internalMutation, mutation, query } from "./_generated/server";
-import type { QueryCtx } from "./_generated/server";
-import { ConvexError, v } from "convex/values";
+import { v } from "convex/values";
 
 /** Fenster in ms, in dem ein Zuschauer als "aktiv" gilt */
 const ACTIVE_WINDOW_MS = 90_000; // 90 Sekunden
@@ -20,20 +19,6 @@ async function fingerprintViewerId(viewerId: string): Promise<string> {
   return Array.from(new Uint8Array(buf))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
-}
-
-// ---- AUTH HELPER ----
-async function requirePresenter(ctx: Pick<QueryCtx, "db">, token: string) {
-  const session = await ctx.db
-    .query("presenterSessions")
-    .withIndex("by_token", (q) => q.eq("token", token))
-    .first();
-  if (!session || session.expiresAt < Date.now()) {
-    throw new ConvexError("Nicht autorisiert");
-  }
-  const presenter = await ctx.db.get(session.presenterId);
-  if (!presenter) throw new ConvexError("Nicht autorisiert");
-  return presenter;
 }
 
 /**
@@ -76,6 +61,10 @@ export const pingViewer = mutation({
 
 /**
  * PRESENTER: Anzahl aktiver Zuschauer für eine Session abfragen.
+ *
+ * Returniert 0 bei jeglichem Auth- oder Daten-Problem statt zu werfen, damit
+ * die UI (useQuery) nicht in einen Error-State kippt. ConvexError-Propagation
+ * in Queries umgeht Handler-try/catch in der aktuellen Convex-Version.
  */
 export const getViewerCount = query({
   args: {
@@ -83,35 +72,25 @@ export const getViewerCount = query({
     sessionId: v.id("presentationSessions"),
   },
   handler: async (ctx, args) => {
-    try {
-      const presenter = await requirePresenter(ctx, args.token);
+    if (!args.token) return 0;
 
-      const session = await ctx.db.get(args.sessionId);
-      if (!session) {
-        console.warn("getViewerCount session not found", {
-          sessionId: args.sessionId,
-        });
-        return 0;
-      }
-      if (session.presenterId !== presenter._id) {
-        console.warn("getViewerCount unauthorized presenter/session access", {
-          sessionId: args.sessionId,
-          presenterId: presenter._id,
-        });
-        return 0;
-      }
+    const presenterSession = await ctx.db
+      .query("presenterSessions")
+      .withIndex("by_token", (q) => q.eq("token", args.token))
+      .first();
 
-      const cutoff = Date.now() - ACTIVE_WINDOW_MS;
-      const heartbeats = await ctx.db
-        .query("viewerHeartbeats")
-        .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
-        .collect();
+    if (!presenterSession || presenterSession.expiresAt < Date.now()) return 0;
 
-      return heartbeats.filter((h) => h.lastSeenAt > cutoff).length;
-    } catch (error) {
-      console.error("getViewerCount failed", { sessionId: args.sessionId, error });
-      return 0;
-    }
+    const session = await ctx.db.get(args.sessionId);
+    if (!session || session.presenterId !== presenterSession.presenterId) return 0;
+
+    const cutoff = Date.now() - ACTIVE_WINDOW_MS;
+    const heartbeats = await ctx.db
+      .query("viewerHeartbeats")
+      .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
+      .collect();
+
+    return heartbeats.filter((h) => h.lastSeenAt > cutoff).length;
   },
 });
 
